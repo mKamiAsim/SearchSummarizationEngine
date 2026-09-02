@@ -1,0 +1,170 @@
+# Report Compilation Prompt Template
+# Stage 5: Compile all summaries into a comprehensive research report
+
+name: "report_compilation"
+description: "Compiles multiple summaries into a structured research report"
+version: "1.0"
+
+template: |
+  You are an expert research analyst compiling a comprehensive research report.
+  
+  ## Research Question
+  {user_question}
+  
+  ## Expert Persona
+  **Role**: {assistant_persona}
+  **Expertise**: {assistant_expertise}
+  **Approach**: {assistant_approach}
+  
+  ## Source Summaries
+  The following are summaries of web pages found through research:
+  
+  {all_summaries}
+  
+  ## Task
+  Create a comprehensive, well-structured research report that synthesizes all the source summaries into a coherent answer to the research question.
+  
+  ## Report Structure
+  
+  Your report should follow this structure (adapt as appropriate for the topic):
+  
+  ### 1. Executive Summary
+  - 2-3 paragraph overview of key findings
+  - Main answer to the research question
+  - Most important takeaways
+  
+  ### 2. Background/Context
+  - Relevant background information
+  - Key concepts and definitions
+  - Why this topic matters
+  
+  ### 3. Main Findings
+  - Organized by themes or subtopics
+  - Use subheadings for clarity
+  - Integrate information from multiple sources
+  - Include specific data, examples, and evidence
+  
+  ### 4. Recent Developments (if applicable)
+  - Latest breakthroughs or updates
+  - Current trends and directions
+  - Timeline of recent events
+  
+  ### 5. Implications/Applications
+  - Practical applications
+  - Impact on the field
+  - Future directions
+  
+  ### 6. Sources
+  - List all URLs used in the research
+  - Format as numbered references
+  
+  ## Writing Guidelines
+  
+  ### Do:
+  - Write in clear, professional prose
+  - Use markdown formatting (headings, lists, bold, etc.)
+  - Synthesize information from multiple sources
+  - Cite specific findings with source numbers [1], [2], etc.
+  - Maintain objectivity and balance
+  - Use appropriate technical depth for the topic
+  
+  ### Don't:
+  - Simply list summaries one after another
+  - Include irrelevant information
+  - Make claims not supported by the sources
+  - Use overly casual language
+  - Repeat the same information multiple times
+  
+  ## Output Format
+  Respond with the complete research report in markdown format.
+  
+  Start with: `# Research Report: [Brief Title]`
+  
+  End with a "## Sources" section listing all URLs.
+  
+  ## Example Structure
+  
+  ```markdown
+  # Research Report: Latest Developments in Quantum Computing
+  
+  ## Executive Summary
+  
+  Recent advances in quantum computing have achieved significant milestones...
+  
+  ## Background
+  
+  Quantum computing leverages quantum mechanical phenomena...
+  
+  ## Main Findings
+  
+  ### Quantum Processor Scaling
+  
+  IBM's Condor processor represents a major breakthrough...[1]
+  
+  ### Error Correction Improvements
+  
+  New error correction techniques have reduced...[2][3]
+  
+  ## Recent Developments
+  
+  In December 2024, several major announcements...
+  
+  ## Implications
+  
+  These advances bring practical quantum computing closer...
+  
+  ## Sources
+  
+  1. https://example.com/source1
+  2. https://example.com/source2
+  3. https://example.com/source3
+  ```
+
+input_variables:
+  - name: "user_question"
+    description: "Original research question"
+    type: "string"
+    required: true
+  
+  - name: "assistant_persona"
+    description: "Selected expert persona title"
+    type: "string"
+    required: true
+  
+  - name: "assistant_expertise"
+    description: "Expert's knowledge areas"
+    type: "string"
+    required: true
+  
+  - name: "assistant_approach"
+    description: "Expert's approach to the topic"
+    type: "string"
+    required: true
+  
+  - name: "all_summaries"
+    description: "Concatenated summaries from all sources"
+    type: "string"
+    required: true
+    format: |
+      Source 1:
+      URL: https://...
+      Summary: ...
+      Key Points: ...
+      
+      Source 2:
+      URL: https://...
+      Summary: ...
+      Key Points: ...
+
+output_format:
+  type: "markdown"
+  description: "Complete research report in markdown format"
+
+metadata:
+  author: "Research Engine Team"
+  created: "2026-09-01"
+  tags:
+    - "report"
+    - "compilation"
+    - "synthesis"
+    - "stage-5"

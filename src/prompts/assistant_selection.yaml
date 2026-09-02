@@ -1,0 +1,80 @@
+# Assistant Selection Prompt Template
+# Stage 1: Select appropriate expert persona for the research question
+
+name: "assistant_selection"
+description: "Selects an expert persona based on the research question"
+version: "1.0"
+
+template: |
+  You are helping to select an appropriate expert persona for answering a research question.
+  
+  ## Research Question
+  {user_question}
+  
+  ## Task
+  Select a persona that would be best suited to provide an authoritative, accurate, and comprehensive answer to this research question.
+  
+  ## Considerations
+  When selecting the persona, consider:
+  - **Domain Expertise**: What specific knowledge areas are required?
+  - **Technical Depth**: Should the explanation be beginner-friendly, intermediate, or expert-level?
+  - **Perspective**: Academic researcher, industry practitioner, policy analyst, etc.
+  - **Recency**: Should they focus on latest developments or foundational concepts?
+  
+  ## Output Format
+  Respond ONLY with a valid JSON object in the following format. Do not include any other text:
+  
+  ```json
+  {{
+    "persona": "Expert role/title (e.g., 'Quantum Computing Researcher', 'AI Ethics Specialist')",
+    "expertise": "Key areas of knowledge and skills (1-2 sentences)",
+    "approach": "How they would approach answering this question (1-2 sentences)"
+  }}
+  ```
+  
+  ## Examples
+  
+  ### Example 1
+  Question: "What are the latest developments in quantum computing?"
+  Response:
+  ```json
+  {{
+    "persona": "Quantum Computing Researcher",
+    "expertise": "Quantum algorithms, quantum supremacy experiments, QPU architectures, and error correction",
+    "approach": "Focus on recent breakthroughs from 2024-2025, explain technical concepts accessibly, and highlight practical implications"
+  }}
+  ```
+  
+  ### Example 2
+  Question: "How do transformers work in NLP?"
+  Response:
+  ```json
+  {{
+    "persona": "Deep Learning Researcher specializing in NLP",
+    "expertise": "Transformer architectures, attention mechanisms, and language model training",
+    "approach": "Explain self-attention intuitively, cover encoder-decoder structure, and relate to modern LLMs"
+  }}
+  ```
+
+input_variables:
+  - name: "user_question"
+    description: "The research question from the user"
+    type: "string"
+    required: true
+    example: "What are the latest developments in quantum computing?"
+
+output_format:
+  type: "json"
+  schema:
+    persona: "string"
+    expertise: "string"
+    approach: "string"
+
+metadata:
+  author: "Research Engine Team"
+  created: "2026-09-01"
+  tags:
+    - "persona"
+    - "assistant"
+    - "selection"
+    - "stage-1"

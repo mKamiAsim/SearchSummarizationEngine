@@ -1,0 +1,33 @@
+# Core LangChain dependencies
+langchain>=0.3.0
+langchain-openai>=0.2.0
+langchain-community>=0.3.0
+
+# Web scraping and searching
+beautifulsoup4>=4.12.0
+requests>=2.31.0
+duckduckgo-search>=6.0.0
+html2text>=2020.1.16
+
+# Configuration and validation
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+python-dotenv>=1.0.0
+
+# Logging and observability
+python-json-logger>=2.0.0
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-asyncio>=0.21.0
+
+# Development utilities
+black>=23.0.0
+isort>=5.12.0
+mypy>=1.7.0
+ruff>=0.1.0
+
+# Optional: For async operations
+aiohttp>=3.9.0
+httpx>=0.25.0

@@ -1,0 +1,144 @@
+# Content Summarization Prompt Template
+# Stage 4: Summarize individual scraped web page content
+
+name: "summarization"
+description: "Summarizes a single web page in context of the research question"
+version: "1.0"
+
+template: |
+  You are an expert research analyst summarizing web content for a research report.
+  
+  ## Research Context
+  **Original Question**: {user_question}
+  **Search Query Used**: {search_query}
+  
+  ## Web Page Content
+  The following text was extracted from a web page found via the search query above:
+  
+  ---
+  {web_page_content}
+  ---
+  
+  ## Task
+  Create a concise, informative summary of this web page content that directly relates to answering the original research question.
+  
+  ## Summary Guidelines
+  
+  ### Focus On:
+  - **Relevance**: Information that directly addresses the research question
+  - **Key Findings**: Main points, discoveries, or conclusions
+  - **Evidence**: Data, statistics, or specific examples provided
+  - **Authority**: Credible claims from experts or reputable sources
+  - **Recency**: Time-sensitive information (dates, "latest", "new", etc.)
+  
+  ### Avoid:
+  - Irrelevant details or tangents
+  - Marketing language or promotional content
+  - Repetitive information
+  - Opinion without evidence
+  - Overly technical jargon without explanation
+  
+  ## Output Format
+  Respond ONLY with a valid JSON object. Do not include any other text:
+  
+  ```json
+  {{
+    "summary": "Concise 3-5 sentence summary of the most relevant content",
+    "key_points": [
+      "First key point or finding",
+      "Second key point or finding",
+      "Third key point or finding"
+    ],
+    "relevance_score": 75,
+    "source_type": "academic | news | blog | documentation | other",
+    "credibility_notes": "Brief notes on source credibility (author, institution, date)"
+  }}
+  ```
+  
+  ### Field Descriptions:
+  - **summary**: 3-5 sentences capturing the most relevant information
+  - **key_points**: 2-5 bullet points of key findings or insights
+  - **relevance_score**: 0-100 indicating how relevant this page is to the question
+  - **source_type**: Type of source (academic paper, news article, blog, documentation, etc.)
+  - **credibility_notes**: Brief assessment of source reliability
+  
+  ## Examples
+  
+  ### Example 1
+  Question: "What are the latest developments in quantum computing?"
+  Search Query: "quantum computing breakthroughs 2024"
+  
+  Response:
+  ```json
+  {{
+    "summary": "IBM announced a 1000+ qubit quantum processor in late 2024, achieving a significant milestone in quantum error correction. The new Condor chip demonstrates improved coherence times and reduced error rates compared to previous generations. Researchers successfully ran quantum algorithms that would be infeasible on classical computers.",
+    "key_points": [
+      "IBM's Condor processor exceeds 1000 qubits",
+      "Improved error correction reduces computational errors by 50%",
+      "Successfully demonstrated quantum advantage for specific algorithms"
+    ],
+    "relevance_score": 92,
+    "source_type": "news",
+    "credibility_notes": "IBM Research official announcement, December 2024, includes technical specifications"
+  }}
+  ```
+  
+  ### Example 2
+  Question: "How do transformers work in NLP?"
+  Search Query: "transformer self-attention explained"
+  
+  Response:
+  ```json
+  {{
+    "summary": "The transformer architecture uses self-attention mechanisms to process sequences in parallel rather than sequentially. Each token attends to all other tokens in the sequence, computing weighted representations based on relevance. This allows the model to capture long-range dependencies more effectively than RNNs.",
+    "key_points": [
+      "Self-attention computes attention scores between all token pairs",
+      "Parallel processing enables faster training than sequential models",
+      "Positional encodings preserve word order information"
+    ],
+    "relevance_score": 88,
+    "source_type": "documentation",
+    "credibility_notes": "Technical blog by ML researcher with code examples, 2024"
+  }}
+  ```
+
+input_variables:
+  - name: "user_question"
+    description: "Original research question from user"
+    type: "string"
+    required: true
+  
+  - name: "search_query"
+    description: "Search query that found this page"
+    type: "string"
+    required: true
+  
+  - name: "web_page_content"
+    description: "Text content extracted from the web page"
+    type: "string"
+    required: true
+    max_length: 10000
+
+output_format:
+  type: "json"
+  schema:
+    summary: "string"
+    key_points:
+      type: "array"
+      items: "string"
+      minItems: 1
+      maxItems: 5
+    relevance_score:
+      type: "integer"
+      minimum: 0
+      maximum: 100
+    source_type: "string"
+    credibility_notes: "string"
+
+metadata:
+  author: "Research Engine Team"
+  created: "2026-09-01"
+  tags:
+    - "summarization"
+    - "content"
+    - "stage-4"

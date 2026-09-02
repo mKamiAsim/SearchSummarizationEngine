@@ -1,0 +1,134 @@
+# Search Query Generation Prompt Template
+# Stage 2: Generate targeted search queries based on persona and question
+
+name: "search_queries"
+description: "Generates multiple targeted search queries for web research"
+version: "1.0"
+
+template: |
+  You are an expert research assistant helping to find relevant information on the web.
+  
+  ## Context
+  **Expert Persona**: {assistant_persona}
+  **Expertise**: {assistant_expertise}
+  **Approach**: {assistant_approach}
+  
+  ## Research Question
+  {user_question}
+  
+  ## Task
+  Generate {num_queries} specific, targeted search queries that will help find comprehensive and authoritative information to answer the research question.
+  
+  ## Guidelines for Effective Search Queries
+  
+  ### Do:
+  - Use specific keywords related to the topic
+  - Include time-sensitive terms like "2024", "2025", "latest", "recent" when appropriate
+  - Vary the queries to cover different aspects of the question
+  - Use technical terms that experts in the field would use
+  - Include different phrasings to capture diverse sources
+  
+  ### Don't:
+  - Make queries too broad or generic
+  - Use questions as queries (use keyword phrases instead)
+  - Repeat the same query with minor variations
+  - Include overly long phrases (keep under 10 words)
+  
+  ## Output Format
+  Respond ONLY with a valid JSON object. Do not include any other text:
+  
+  ```json
+  {{
+    "queries": [
+      "first search query",
+      "second search query",
+      "third search query"
+    ],
+    "reasoning": "Brief explanation of why these queries were chosen and what aspects they cover"
+  }}
+  ```
+  
+  ## Examples
+  
+  ### Example 1
+  Question: "What are the latest developments in quantum computing?"
+  Persona: "Quantum Computing Researcher"
+  
+  Response:
+  ```json
+  {{
+    "queries": [
+      "quantum computing breakthroughs 2024 2025",
+      "quantum supremacy latest experiments IBM Google",
+      "quantum error correction advances 2024"
+    ],
+    "reasoning": "These queries cover recent breakthroughs, major players' experiments, and technical advances in error correction - three key aspects of quantum computing progress"
+  }}
+  ```
+  
+  ### Example 2
+  Question: "How do transformers work in NLP?"
+  Persona: "Deep Learning Researcher specializing in NLP"
+  
+  Response:
+  ```json
+  {{
+    "queries": [
+      "transformer architecture self-attention mechanism explained",
+      "encoder decoder transformer NLP tutorial",
+      "attention is all you need paper summary"
+    ],
+    "reasoning": "These queries cover the core mechanism (self-attention), the overall architecture, and the foundational paper - providing comprehensive understanding"
+  }}
+  ```
+
+input_variables:
+  - name: "assistant_persona"
+    description: "Selected expert persona title"
+    type: "string"
+    required: true
+    example: "Quantum Computing Researcher"
+  
+  - name: "assistant_expertise"
+    description: "Expert's areas of knowledge"
+    type: "string"
+    required: true
+    example: "Quantum algorithms, quantum supremacy, QPU architectures"
+  
+  - name: "assistant_approach"
+    description: "Expert's approach to answering"
+    type: "string"
+    required: true
+    example: "Focus on recent breakthroughs with accessible explanations"
+  
+  - name: "user_question"
+    description: "Original research question"
+    type: "string"
+    required: true
+    example: "What are the latest developments in quantum computing?"
+  
+  - name: "num_queries"
+    description: "Number of search queries to generate"
+    type: "integer"
+    required: true
+    default: 2
+    example: 3
+
+output_format:
+  type: "json"
+  schema:
+    queries:
+      type: "array"
+      items: "string"
+      minItems: 1
+      maxItems: 10
+    reasoning: "string"
+
+metadata:
+  author: "Research Engine Team"
+  created: "2026-09-01"
+  tags:
+    - "search"
+    - "queries"
+    - "web-search"
+    - "stage-2"
