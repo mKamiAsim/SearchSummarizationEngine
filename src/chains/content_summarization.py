@@ -58,7 +58,9 @@ def create_summarization_chain() -> Runnable:
     )
 
     # Build chain: prompt -> llm -> parser
-    chain = prompt | llm | parser
+    chain = (prompt | llm | parser).with_config({
+        "run_name": "Content Summarization",
+    })
 
     logger.debug("Created summarization chain")
 

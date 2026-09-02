@@ -57,7 +57,9 @@ def create_search_query_generation_chain() -> Runnable:
     )
 
     # Build chain: prompt -> llm -> parser
-    chain = prompt | llm | parser
+    chain = (prompt | llm | parser).with_config({
+        "run_name": "Search Query Generation",
+    })
 
     logger.debug("Created search query generation chain")
 

@@ -10,6 +10,7 @@ import time
 from typing import Any
 
 from duckduckgo_search import DDGS
+from langsmith import traceable
 
 from ..config.settings import Settings, get_settings
 from ..core.models import SearchResult
@@ -17,6 +18,7 @@ from ..core.models import SearchResult
 logger = logging.getLogger(__name__)
 
 
+@traceable(name="web_search", run_type="tool")
 def search_web(
     query: str,
     num_results: int = 3,
@@ -83,6 +85,7 @@ def search_web(
         return []
 
 
+@traceable(name="search_multiple_queries", run_type="tool")
 def search_multiple_queries(
     queries: list[str],
     results_per_query: int = 3,

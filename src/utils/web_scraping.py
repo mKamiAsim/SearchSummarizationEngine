@@ -12,6 +12,7 @@ from typing import Any
 import html2text
 import requests
 from bs4 import BeautifulSoup
+from langsmith import traceable
 
 from ..config.settings import Settings, get_settings
 from ..core.models import ScrapedContent
@@ -35,6 +36,7 @@ DEFAULT_HEADERS = {
 }
 
 
+@traceable(name="scrape_url", run_type="tool")
 def scrape_url(
     url: str,
     max_characters: int = 10000,
@@ -113,6 +115,7 @@ def scrape_url(
         )
 
 
+@traceable(name="scrape_urls", run_type="tool")
 def scrape_urls(
     urls: list[str],
     max_characters_per_url: int = 10000,

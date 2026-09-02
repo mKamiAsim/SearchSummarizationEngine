@@ -11,6 +11,8 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+from langsmith import traceable
+
 from .chains import (
     select_assistant,
     generate_search_queries,
@@ -64,6 +66,7 @@ class ResearchOrchestrator:
         if not root_logger.handlers:
             setup_logging(self.settings)
 
+    @traceable(name="Research Pipeline", run_type="chain")
     def run(
         self,
         user_question: str,

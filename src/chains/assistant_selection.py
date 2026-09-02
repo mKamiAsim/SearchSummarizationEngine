@@ -52,7 +52,9 @@ def create_assistant_selection_chain() -> Runnable:
     )
 
     # Build chain: prompt -> llm -> parser
-    chain = prompt | llm | parser
+    chain = (prompt | llm | parser).with_config({
+        "run_name": "Assistant Selection",
+    })
 
     logger.debug("Created assistant selection chain")
 

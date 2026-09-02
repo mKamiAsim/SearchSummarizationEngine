@@ -45,7 +45,9 @@ def create_report_compilation_chain() -> Runnable:
 
     # Build chain: prompt -> llm
     # Note: No parser needed - we want raw markdown text
-    chain = prompt | llm
+    chain = (prompt | llm).with_config({
+        "run_name": "Report Compilation",
+    })
 
     logger.debug("Created report compilation chain")
 

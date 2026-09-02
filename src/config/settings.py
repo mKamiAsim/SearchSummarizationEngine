@@ -67,7 +67,7 @@ class Settings(BaseSettings):
     )
 
     langchain_tracing_v2: bool = Field(
-        default=False,
+        default=True,
         description="Enable LangSmith tracing via LANGCHAIN_TRACING_V2",
     )
 
