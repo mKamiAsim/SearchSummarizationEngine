@@ -11,15 +11,15 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from src.chains import (
+from chains import (
     select_assistant,
     generate_search_queries,
     summarize_content,
     compile_report,
 )
-from src.config.settings import Settings, get_settings
-from src.core.models import PipelineState, ResearchReport
-from src.utils import search_web, scrape_urls, setup_logging, get_logger, search_multiple_queries
+from config.settings import Settings, get_settings
+from core.models import PipelineState, ResearchReport
+from utils import search_web, scrape_urls, setup_logging, get_logger, search_multiple_queries
 
 logger = get_logger("orchestrator")
 

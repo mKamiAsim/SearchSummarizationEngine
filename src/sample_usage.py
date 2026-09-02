@@ -4,8 +4,8 @@ Sample usage examples for the Research Summarization Engine.
 This file demonstrates various ways to use the research engine.
 """
 
-from src.orchestrator import ResearchOrchestrator
-from src.config.settings import Settings, get_settings
+from orchestrator import ResearchOrchestrator
+from config.settings import Settings, get_settings
 
 
 def example_basic_usage():
@@ -168,7 +168,7 @@ def main():
 
     # Uncomment the examples you want to run:
 
-    # example_basic_usage()
+    example_basic_usage()
     # example_custom_settings()
     # example_batch_processing()
     # example_programmatic_access()

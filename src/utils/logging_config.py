@@ -10,7 +10,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from pythonjsonlogger.json import JsonFormatter
-from src.config.settings import Settings, get_settings
+from config.settings import Settings, get_settings
 from typing import Any, Callable, Optional
 
 

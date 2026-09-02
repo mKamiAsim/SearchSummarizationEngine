@@ -43,7 +43,7 @@ class Settings(BaseSettings):
     )
 
     openai_model_name: str = Field(
-        default="llama-3.1-8b-instruct",
+        default="qwen/qwen3.5-4b",
         description="Model name to use for LLM calls",
     )
 

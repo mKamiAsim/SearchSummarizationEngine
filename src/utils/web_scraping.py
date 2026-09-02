@@ -13,8 +13,8 @@ import html2text
 import requests
 from bs4 import BeautifulSoup
 
-from src.config.settings import Settings, get_settings
-from src.core.models import ScrapedContent
+from config.settings import Settings, get_settings
+from core.models import ScrapedContent
 
 logger = logging.getLogger(__name__)
 

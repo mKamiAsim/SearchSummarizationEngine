@@ -10,9 +10,9 @@ import logging
 import re
 from typing import Any
 
-from langchain_core.output_parsers import PydanticOutputParser
+from langchain_core.output_parsers import BaseOutputParser, PydanticOutputParser
 from langchain_core.exceptions import OutputParserException
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, Field, model_validator
 
 logger = logging.getLogger(__name__)
 
@@ -104,63 +104,58 @@ def parse_json_response(
         raise
 
 
-class RobustPydanticParser:
+class RobustPydanticParser(BaseOutputParser[BaseModel]):
     """
     Robust output parser for Pydantic models with fallback.
 
     This parser combines LangChain's PydanticOutputParser with
-    custom error handling and default values.
+    custom error handling and default values. Fully LCEL compatible.
     """
 
-    def __init__(
-        self,
-        model: type[BaseModel],
-        default: BaseModel | None = None,
-        max_retries: int = 3,
-    ):
-        """
-        Initialize the parser.
+    # 1. Properly define Pydantic schema types
+    model: type[BaseModel]
+    default: BaseModel | None = None
+    max_retries: int = 3
 
-        Args:
-            model: Pydantic model class to parse into
-            default: Default instance on parsing failure
-            max_retries: Maximum retry attempts
-        """
-        self.model = model
-        self.default = default
-        self.max_retries = max_retries
-        self.langchain_parser = PydanticOutputParser(pydantic_object=model)
+    # Exclude from direct init signature or mark as optionally computed
+    langchain_parser: Any = None
 
-    def parse(self, response: str) -> BaseModel:
-        """
-        Parse LLM response into Pydantic model.
+    # 2. Use a Pydantic model validator instead of a custom __init__
+    @model_validator(mode="after")
+    def setup_langchain_parser(self) -> "RobustPydanticParser":
+        if self.langchain_parser is None:
+            self.langchain_parser = PydanticOutputParser(
+                pydantic_object=self.model)
+        return self
 
-        Args:
-            response: Raw LLM response text
-
-        Returns:
-            BaseModel: Parsed model instance
+    def parse(self, text: Any) -> BaseModel:
         """
+        Parse LLM response string into Pydantic model.
+        """
+        # Safely capture string if data arrives as a LangChain Message object
+        input_string = text.content if hasattr(text, "content") else str(text)
+
         for attempt in range(self.max_retries):
             try:
                 # Try LangChain's parser first
-                return self.langchain_parser.parse(response)
+                return self.langchain_parser.parse(input_string)
             except OutputParserException:
                 pass
 
             # Fall back to custom parser
             try:
-                return parse_json_response(response, self.model, self.default)
+                return parse_json_response(input_string, self.model, self.default)
             except ValueError:
                 pass
 
             if attempt < self.max_retries - 1:
                 logger.warning(
-                    f"Parse attempt {attempt + 1}/{self.max_retries} failed, retrying...")
+                    f"Parse attempt {attempt + 1}/{self.max_retries} failed, retrying..."
+                )
 
         # All retries failed
         if self.default is not None:
-            logger.error(f"All parsing attempts failed, using default")
+            logger.error("All parsing attempts failed, using default")
             return self.default
 
         raise OutputParserException(
@@ -170,3 +165,7 @@ class RobustPydanticParser:
     def get_format_instructions(self) -> str:
         """Get format instructions for the prompt."""
         return self.langchain_parser.get_format_instructions()
+
+    @property
+    def _type(self) -> str:
+        return "robust_pydantic_parser"
