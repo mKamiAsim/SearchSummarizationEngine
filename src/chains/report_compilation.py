@@ -9,10 +9,10 @@ from datetime import datetime
 
 from langchain_core.runnables import Runnable
 
-from config.settings import get_settings
-from core.llm_factory import create_llm
-from core.models import SummarizedResult, ResearchReport, AssistantPersona
-from prompts import get_report_compilation_prompt
+from ..config.settings import get_settings
+from ..core.llm_factory import create_llm
+from ..core.models import SummarizedResult, ResearchReport, AssistantPersona
+from ..prompts import get_report_compilation_prompt
 
 logger = logging.getLogger(__name__)
 

@@ -9,7 +9,7 @@ and cloud-based OpenAI-compatible endpoints.
 import logging
 from functools import lru_cache
 from langchain_openai import ChatOpenAI
-from config.settings import Settings, get_settings
+from ..config.settings import Settings, get_settings
 from pydantic import SecretStr
 
 logger = logging.getLogger(__name__)

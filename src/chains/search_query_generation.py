@@ -9,11 +9,11 @@ from typing import Any
 
 from langchain_core.runnables import Runnable
 
-from config.settings import get_settings
-from core.models import SearchQueryGeneration, AssistantPersona
-from core.llm_factory import create_llm
-from prompts import get_search_queries_prompt
-from utils.parsers import RobustPydanticParser
+from ..config.settings import get_settings
+from ..core.models import SearchQueryGeneration, AssistantPersona
+from ..core.llm_factory import create_llm
+from ..prompts import get_search_queries_prompt
+from ..utils.parsers import RobustPydanticParser
 
 logger = logging.getLogger(__name__)
 

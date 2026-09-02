@@ -11,8 +11,8 @@ from typing import Any
 
 from duckduckgo_search import DDGS
 
-from config.settings import Settings, get_settings
-from core.models import SearchResult
+from ..config.settings import Settings, get_settings
+from ..core.models import SearchResult
 
 logger = logging.getLogger(__name__)
 

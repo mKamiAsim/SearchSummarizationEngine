@@ -12,7 +12,7 @@ from pathlib import Path
 import yaml
 from langchain_core.prompts import PromptTemplate
 
-from config.settings import get_settings
+from ..config.settings import get_settings
 
 logger = logging.getLogger(__name__)
 

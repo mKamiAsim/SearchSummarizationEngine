@@ -4,8 +4,14 @@ Sample usage examples for the Research Summarization Engine.
 This file demonstrates various ways to use the research engine.
 """
 
-from orchestrator import ResearchOrchestrator
-from config.settings import Settings, get_settings
+import sys
+from pathlib import Path
+
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from src.orchestrator import ResearchOrchestrator
+from src.config.settings import Settings, get_settings
 
 
 def example_basic_usage():

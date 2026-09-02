@@ -66,6 +66,23 @@ class Settings(BaseSettings):
         description="Request timeout in seconds",
     )
 
+    langchain_tracing_v2: bool = Field(
+        default=False,
+        description="Enable LangSmith tracing via LANGCHAIN_TRACING_V2",
+    )
+
+    langchain_api_key: str = Field(default="", description="LangSmith API key")
+
+    langchain_project: str = Field(
+        default="search-summarization-engine",
+        description="LangSmith project name",
+    )
+
+    langchain_endpoint: str = Field(
+        default="https://api.smith.langchain.com",
+        description="LangSmith API endpoint",
+    )
+
     # =========================================================================
     # Pipeline Configuration
     # =========================================================================

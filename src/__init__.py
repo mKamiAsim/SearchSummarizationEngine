@@ -9,7 +9,7 @@ __version__ = "1.0.0"
 __author__ = "Your Name"
 __email__ = "your.email@example.com"
 
-from config.settings import Settings
-from orchestrator import ResearchOrchestrator
+from .config.settings import Settings
+from .orchestrator import ResearchOrchestrator
 
 __all__ = ["Settings", "ResearchOrchestrator", "__version__"]

@@ -8,11 +8,11 @@ import logging
 
 from langchain_core.runnables import Runnable
 
-from config.settings import get_settings
-from core.llm_factory import create_llm
-from core.models import SummarizedResult, ScrapedContent
-from prompts import get_summarization_prompt
-from utils.parsers import RobustPydanticParser
+from ..config.settings import get_settings
+from ..core.llm_factory import create_llm
+from ..core.models import SummarizedResult, ScrapedContent
+from ..prompts import get_summarization_prompt
+from ..utils.parsers import RobustPydanticParser
 
 logger = logging.getLogger(__name__)
 

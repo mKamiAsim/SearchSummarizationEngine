@@ -1,7 +1,7 @@
 """Core module with LLM factory and data models."""
 
-from core.llm_factory import create_llm, get_cached_llm, test_llm_connection, get_llm_info
-from core.models import (
+from .llm_factory import create_llm, get_cached_llm, test_llm_connection, get_llm_info
+from .models import (
     AssistantPersona,
     SearchQueryGeneration,
     SearchResult,

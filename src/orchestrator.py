@@ -11,15 +11,16 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from chains import (
+from .chains import (
     select_assistant,
     generate_search_queries,
     summarize_content,
     compile_report,
 )
-from config.settings import Settings, get_settings
-from core.models import PipelineState, ResearchReport
-from utils import search_web, scrape_urls, setup_logging, get_logger, search_multiple_queries
+from .config.settings import Settings, get_settings
+from .core.models import PipelineState, ResearchReport
+from .core.observability import configure_langsmith
+from .utils import scrape_urls, setup_logging, get_logger, search_multiple_queries
 
 logger = get_logger("orchestrator")
 
@@ -49,6 +50,7 @@ class ResearchOrchestrator:
             settings: Custom settings. If None, uses cached global settings.
         """
         self.settings = settings if settings else get_settings()
+        configure_langsmith(self.settings)
         self._setup_logging()
 
         logger.info("ResearchOrchestrator initialized")
