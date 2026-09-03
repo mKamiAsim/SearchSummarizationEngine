@@ -61,7 +61,7 @@ class Settings(BaseSettings):
     )
 
     openai_timeout: int = Field(
-        default=120,
+        default=160,
         gt=0,
         description="Request timeout in seconds",
     )
@@ -114,7 +114,7 @@ class Settings(BaseSettings):
     )
 
     scraper_timeout_seconds: int = Field(
-        default=15,
+        default=30,
         gt=0,
         description="Timeout for web scraping HTTP requests",
     )
