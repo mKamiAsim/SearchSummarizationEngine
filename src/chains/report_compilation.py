@@ -13,6 +13,7 @@ from ..config.settings import get_settings
 from ..core.llm_factory import create_llm
 from ..core.models import SummarizedResult, ResearchReport, AssistantPersona
 from ..prompts import get_report_compilation_prompt
+from ..utils.time_context import get_time_context
 
 logger = logging.getLogger(__name__)
 
@@ -135,6 +136,7 @@ def compile_report(
         "assistant_expertise": persona.expertise,
         "assistant_approach": persona.approach,
         "all_summaries": all_summaries_text,
+        **get_time_context(),
     })
 
     # Extract content from AIMessage if needed

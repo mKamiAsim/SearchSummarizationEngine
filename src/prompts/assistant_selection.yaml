@@ -3,10 +3,14 @@
 
 name: "assistant_selection"
 description: "Selects an expert persona based on the research question"
-version: "1.0"
+version: "1.1"
 
 template: |
   You are helping to select an appropriate expert persona for answering a research question.
+  
+  ## Time Context
+  **Today**: {current_date}
+  **Current year**: {current_year}
   
   ## Research Question
   {user_question}
@@ -19,7 +23,7 @@ template: |
   - **Domain Expertise**: What specific knowledge areas are required?
   - **Technical Depth**: Should the explanation be beginner-friendly, intermediate, or expert-level?
   - **Perspective**: Academic researcher, industry practitioner, policy analyst, etc.
-  - **Recency**: Should they focus on latest developments or foundational concepts?
+  - **Recency**: Default to the latest public information as of {current_date}. Only focus on a past period if the user explicitly names a past year or asks for history, evolution, or a timeline.
   
   ## Output Format
   Respond ONLY with a valid JSON object in the following format. Do not include any other text:
@@ -41,7 +45,7 @@ template: |
   {{
     "persona": "Quantum Computing Researcher",
     "expertise": "Quantum algorithms, quantum supremacy experiments, QPU architectures, and error correction",
-    "approach": "Focus on recent breakthroughs from 2024-2025, explain technical concepts accessibly, and highlight practical implications"
+    "approach": "Focus on the most recent public information as of {current_date}, explain technical concepts accessibly, and highlight practical implications"
   }}
   ```
   
@@ -63,6 +67,18 @@ input_variables:
     required: true
     example: "What are the latest developments in quantum computing?"
 
+  - name: "current_date"
+    description: "Calendar date when research is run, injected by the pipeline"
+    type: "string"
+    required: true
+    example: "Thursday, 03 September 2026"
+
+  - name: "current_year"
+    description: "Calendar year when research is run, injected by the pipeline"
+    type: "string"
+    required: true
+    example: "2026"
+
 output_format:
   type: "json"
   schema:
@@ -73,6 +89,7 @@ output_format:
 metadata:
   author: "Research Engine Team"
   created: "2026-09-01"
+  updated: "2026-09-03"
   tags:
     - "persona"
     - "assistant"

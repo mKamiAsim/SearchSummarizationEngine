@@ -3,10 +3,13 @@
 
 name: "summarization"
 description: "Summarizes a single web page in context of the research question"
-version: "1.0"
+version: "1.1"
 
 template: |
   You are an expert research analyst summarizing web content for a research report.
+  
+  ## Time Context
+  **Today**: {current_date}
   
   ## Research Context
   **Original Question**: {user_question}
@@ -22,6 +25,12 @@ template: |
   ## Task
   Create a concise, informative summary of this web page content that directly relates to answering the original research question.
   
+  ## Source Fidelity
+  - Use only facts, dates, and model names that appear in the source text
+  - Do not fill gaps with older products or specs from training knowledge
+  - If the page is about a different or older model than the question asked, say so and lower relevance_score
+  - If the source does not mention the named product, say the page is insufficient — do not substitute a similar older product
+  
   ## Summary Guidelines
   
   ### Focus On:
@@ -29,7 +38,7 @@ template: |
   - **Key Findings**: Main points, discoveries, or conclusions
   - **Evidence**: Data, statistics, or specific examples provided
   - **Authority**: Credible claims from experts or reputable sources
-  - **Recency**: Time-sensitive information (dates, "latest", "new", etc.)
+  - **Recency**: Publication dates and time-sensitive claims in the source (prefer current information as of {current_date} unless the user asked for a past period)
   
   ### Avoid:
   - Irrelevant details or tangents
@@ -37,6 +46,7 @@ template: |
   - Repetitive information
   - Opinion without evidence
   - Overly technical jargon without explanation
+  - Inventing launch years, SKUs, or specs not present in the page
   
   ## Output Format
   Respond ONLY with a valid JSON object. Do not include any other text:
@@ -66,20 +76,20 @@ template: |
   
   ### Example 1
   Question: "What are the latest developments in quantum computing?"
-  Search Query: "quantum computing breakthroughs 2024"
+  Search Query: "quantum computing breakthroughs {current_year}"
   
   Response:
   ```json
   {{
-    "summary": "IBM announced a 1000+ qubit quantum processor in late 2024, achieving a significant milestone in quantum error correction. The new Condor chip demonstrates improved coherence times and reduced error rates compared to previous generations. Researchers successfully ran quantum algorithms that would be infeasible on classical computers.",
+    "summary": "The source reports a new quantum processor announcement with improved error correction and longer coherence times versus the vendor's previous generation. It describes algorithms demonstrated on the hardware and cites published technical specifications. Dates and model names in this summary match the page, not prior-year products from memory.",
     "key_points": [
-      "IBM's Condor processor exceeds 1000 qubits",
-      "Improved error correction reduces computational errors by 50%",
-      "Successfully demonstrated quantum advantage for specific algorithms"
+      "Vendor announced a new processor with stated qubit count and error-correction gains",
+      "Coherence times and error rates are compared to the previous generation on the same page",
+      "The article includes a publication or announcement date that should be preserved"
     ],
     "relevance_score": 92,
     "source_type": "news",
-    "credibility_notes": "IBM Research official announcement, December 2024, includes technical specifications"
+    "credibility_notes": "Vendor or research lab announcement with technical specifications and a clear date"
   }}
   ```
   
@@ -98,7 +108,7 @@ template: |
     ],
     "relevance_score": 88,
     "source_type": "documentation",
-    "credibility_notes": "Technical blog by ML researcher with code examples, 2024"
+    "credibility_notes": "Technical blog by ML researcher with code examples"
   }}
   ```
 
@@ -119,6 +129,18 @@ input_variables:
     required: true
     max_length: 10000
 
+  - name: "current_date"
+    description: "Calendar date when research is run, injected by the pipeline"
+    type: "string"
+    required: true
+    example: "Thursday, 03 September 2026"
+
+  - name: "current_year"
+    description: "Calendar year when research is run, injected by the pipeline"
+    type: "string"
+    required: true
+    example: "2026"
+
 output_format:
   type: "json"
   schema:
@@ -138,6 +160,7 @@ output_format:
 metadata:
   author: "Research Engine Team"
   created: "2026-09-01"
+  updated: "2026-09-03"
   tags:
     - "summarization"
     - "content"

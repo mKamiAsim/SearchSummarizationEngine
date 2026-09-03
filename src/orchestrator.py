@@ -138,7 +138,7 @@ class ResearchOrchestrator:
                 state.search_queries,
                 results_per_query=self.settings.num_search_results_per_query,
                 delay_between_queries=self.settings.search_delay_seconds,
-                settings=self.settings,
+                user_question=state.user_question,
             )
             state.search_results = all_search_results
             logger.info(f"✓ Found {len(all_search_results)} unique URLs")
@@ -160,7 +160,6 @@ class ResearchOrchestrator:
                 scraped_contents = scrape_urls(
                     urls,
                     max_characters_per_url=self.settings.result_text_max_characters,
-                    settings=self.settings,
                 )
                 state.scraped_content = scraped_contents
 

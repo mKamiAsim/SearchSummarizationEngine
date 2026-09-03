@@ -113,6 +113,25 @@ class Settings(BaseSettings):
         description="Delay between search requests to avoid rate limiting",
     )
 
+    search_backend: Literal["auto", "tavily", "duckduckgo"] = Field(
+        default="tavily",
+        description=(
+            "Web search provider. Default is Tavily (requires TAVILY_API_KEY). "
+            "'auto' uses Tavily when a key is set, otherwise DuckDuckGo. "
+            "DuckDuckGo's unofficial API often returns empty results."
+        ),
+    )
+
+    tavily_api_key: str = Field(
+        default="",
+        description="Tavily API key (https://app.tavily.com). Required for reliable search.",
+    )
+
+    tavily_search_depth: Literal["basic", "advanced"] = Field(
+        default="basic",
+        description="Tavily search depth: basic (1 credit) or advanced (2 credits)",
+    )
+
     scraper_timeout_seconds: int = Field(
         default=30,
         gt=0,
@@ -266,8 +285,9 @@ class Settings(BaseSettings):
         """String representation with sensitive fields masked."""
         settings_dict = self.to_dict()
         # Mask sensitive values
-        if "openai_api_key" in settings_dict:
-            settings_dict["openai_api_key"] = "***MASKED***"
+        for secret_field in ("openai_api_key", "tavily_api_key", "langchain_api_key"):
+            if secret_field in settings_dict and settings_dict[secret_field]:
+                settings_dict[secret_field] = "***MASKED***"
         return f"Settings({settings_dict})"
 
 

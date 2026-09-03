@@ -36,7 +36,7 @@ DEFAULT_HEADERS = {
 }
 
 
-@traceable(name="scrape_url", run_type="tool")
+@traceable(name="scrape_url", run_type="tool", process_inputs=lambda inputs: {k: v for k, v in inputs.items() if k != "settings"})
 def scrape_url(
     url: str,
     max_characters: int = 10000,
@@ -115,7 +115,7 @@ def scrape_url(
         )
 
 
-@traceable(name="scrape_urls", run_type="tool")
+@traceable(name="scrape_urls", run_type="tool", process_inputs=lambda inputs: {k: v for k, v in inputs.items() if k != "settings"})
 def scrape_urls(
     urls: list[str],
     max_characters_per_url: int = 10000,

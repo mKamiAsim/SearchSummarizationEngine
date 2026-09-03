@@ -14,6 +14,7 @@ from ..core.models import SearchQueryGeneration, AssistantPersona
 from ..core.llm_factory import create_llm
 from ..prompts import get_search_queries_prompt
 from ..utils.parsers import RobustPydanticParser
+from ..utils.time_context import get_time_context
 
 logger = logging.getLogger(__name__)
 
@@ -106,6 +107,7 @@ def generate_search_queries(
         "assistant_approach": persona.approach,
         "user_question": user_question,
         "num_queries": num_queries,
+        **get_time_context(),
     })
 
     logger.info(f"Generated {len(result.queries)} queries: {result.queries}")

@@ -45,6 +45,13 @@ OPENAI_API_BASE=http://localhost:1234/v1
 OPENAI_MODEL_NAME=qwen/qwen3.5-4b
 OPENAI_TEMPERATURE=0.3
 OPENAI_MAX_TOKENS=12288
+
+# Web search: Tavily is required for reliable results.
+# DuckDuckGo's unofficial API often returns empty lists (rate limits / HTML changes).
+# Get a key at https://app.tavily.com
+TAVILY_API_KEY=tvly-your-key
+SEARCH_BACKEND=tavily
+# TAVILY_SEARCH_DEPTH=basic
 ```
 
 Settings are defined and validated in `src/config/settings.py`. Environment variables override defaults. The API base is normalized to end in `/v1`; the default local setup does not require a cloud key.

@@ -3,10 +3,14 @@
 
 name: "search_queries"
 description: "Generates multiple targeted search queries for web research"
-version: "1.0"
+version: "1.1"
 
 template: |
   You are an expert research assistant helping to find relevant information on the web.
+  
+  ## Time Context
+  **Today**: {current_date}
+  **Current year**: {current_year}
   
   ## Context
   **Expert Persona**: {assistant_persona}
@@ -19,11 +23,21 @@ template: |
   ## Task
   Generate {num_queries} specific, targeted search queries that will help find comprehensive and authoritative information to answer the research question.
   
+  ## Recency Policy
+  Default to CURRENT information unless the user explicitly asks otherwise.
+  - If the question has no past year and is not about history/evolution/timeline: use {current_year} and terms like "announced", "launch", "specs", "review", "latest"
+  - Do NOT attach older years (for example years before {current_year}) just because they feel familiar
+  - Only use a past year or omit the current year if the user named that period or asked for history, evolution, or a timeline
+  
+  ## Entity Fidelity
+  - Copy product, model, and brand names EXACTLY from the research question
+  - Do NOT replace unknown or new names with similar older products from training data
+  - If a name looks unfamiliar, keep it and search for it anyway
+  
   ## Guidelines for Effective Search Queries
   
   ### Do:
   - Use specific keywords related to the topic
-  - Include time-sensitive terms like "2024", "2025", "latest", "recent" when appropriate
   - Vary the queries to cover different aspects of the question
   - Use technical terms that experts in the field would use
   - Include different phrasings to capture diverse sources
@@ -33,6 +47,7 @@ template: |
   - Use questions as queries (use keyword phrases instead)
   - Repeat the same query with minor variations
   - Include overly long phrases (keep under 10 words)
+  - Substitute a different product than the one the user named
   
   ## Output Format
   Respond ONLY with a valid JSON object. Do not include any other text:
@@ -58,15 +73,31 @@ template: |
   ```json
   {{
     "queries": [
-      "quantum computing breakthroughs 2024 2025",
+      "quantum computing breakthroughs {current_year}",
       "quantum supremacy latest experiments IBM Google",
-      "quantum error correction advances 2024"
+      "quantum error correction advances {current_year}"
     ],
     "reasoning": "These queries cover recent breakthroughs, major players' experiments, and technical advances in error correction - three key aspects of quantum computing progress"
   }}
   ```
   
   ### Example 2
+  Question: "Compare Nvidia RTX Spark and Apple Mac Studio M5"
+  Persona: "Hardware Analyst specializing in workstation GPUs and Apple silicon"
+  
+  Response:
+  ```json
+  {{
+    "queries": [
+      "Nvidia RTX Spark specs launch {current_year}",
+      "Apple Mac Studio M5 review {current_year}",
+      "RTX Spark vs Mac Studio M5 comparison"
+    ],
+    "reasoning": "Queries keep both product names verbatim, target current-year launch/specs coverage, and a direct comparison. They do not substitute older RTX or Mac Studio generations."
+  }}
+  ```
+  
+  ### Example 3
   Question: "How do transformers work in NLP?"
   Persona: "Deep Learning Researcher specializing in NLP"
   
@@ -114,6 +145,18 @@ input_variables:
     default: 2
     example: 3
 
+  - name: "current_date"
+    description: "Calendar date when research is run, injected by the pipeline"
+    type: "string"
+    required: true
+    example: "Thursday, 03 September 2026"
+
+  - name: "current_year"
+    description: "Calendar year when research is run, injected by the pipeline"
+    type: "string"
+    required: true
+    example: "2026"
+
 output_format:
   type: "json"
   schema:
@@ -127,6 +170,7 @@ output_format:
 metadata:
   author: "Research Engine Team"
   created: "2026-09-01"
+  updated: "2026-09-03"
   tags:
     - "search"
     - "queries"

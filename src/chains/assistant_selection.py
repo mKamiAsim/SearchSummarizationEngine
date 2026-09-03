@@ -14,6 +14,7 @@ from ..core.llm_factory import create_llm
 from ..core.models import AssistantPersona
 from ..prompts import get_assistant_selection_prompt
 from ..utils.parsers import RobustPydanticParser
+from ..utils.time_context import get_time_context
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +81,7 @@ def select_assistant(user_question: str) -> AssistantPersona:
     logger.info(f"Selecting assistant persona for: '{user_question[:100]}...'")
 
     chain = create_assistant_selection_chain()
-    result = chain.invoke({"user_question": user_question})
+    result = chain.invoke({"user_question": user_question, **get_time_context()})
 
     logger.info(f"Selected persona: {result.persona}")
 

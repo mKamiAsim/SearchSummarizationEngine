@@ -13,6 +13,7 @@ from ..core.llm_factory import create_llm
 from ..core.models import SummarizedResult, ScrapedContent
 from ..prompts import get_summarization_prompt
 from ..utils.parsers import RobustPydanticParser
+from ..utils.time_context import get_time_context
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +125,7 @@ def summarize_content(
         "user_question": user_question,
         "search_query": search_query,
         "web_page_content": scraped_content.content[:settings.result_text_max_characters],
+        **get_time_context(),
     })
 
     # Ensure URL is set

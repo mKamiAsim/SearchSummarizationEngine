@@ -3,10 +3,14 @@
 
 name: "report_compilation"
 description: "Compiles multiple summaries into a structured research report"
-version: "1.0"
+version: "1.1"
 
 template: |
   You are an expert research analyst compiling a comprehensive research report.
+  
+  ## Time Context
+  **Today**: {current_date}
+  **Current year**: {current_year}
   
   ## Research Question
   {user_question}
@@ -23,6 +27,13 @@ template: |
   
   ## Task
   Create a comprehensive, well-structured research report that synthesizes all the source summaries into a coherent answer to the research question.
+  
+  ## Source Fidelity
+  - Prefer facts, dates, and model names from the source summaries
+  - Do not replace the user's named products with similar older products from training knowledge
+  - If sources cover a different generation or year than the question asked, say so clearly
+  - If sources are insufficient for the named products, state that rather than filling gaps with prior-year hardware or software
+  - Default to current information as of {current_date} unless the user explicitly asked for a past period
   
   ## Report Structure
   
@@ -45,9 +56,9 @@ template: |
   - Include specific data, examples, and evidence
   
   ### 4. Recent Developments (if applicable)
-  - Latest breakthroughs or updates
+  - Latest breakthroughs or updates as of {current_date}
   - Current trends and directions
-  - Timeline of recent events
+  - Timeline of recent events from the sources
   
   ### 5. Implications/Applications
   - Practical applications
@@ -74,6 +85,7 @@ template: |
   - Make claims not supported by the sources
   - Use overly casual language
   - Repeat the same information multiple times
+  - Invent specs, launch dates, or product names missing from the sources
   
   ## Output Format
   Respond with the complete research report in markdown format.
@@ -99,7 +111,7 @@ template: |
   
   ### Quantum Processor Scaling
   
-  IBM's Condor processor represents a major breakthrough...[1]
+  A new processor generation reported in the sources represents a major step...[1]
   
   ### Error Correction Improvements
   
@@ -107,7 +119,7 @@ template: |
   
   ## Recent Developments
   
-  In December 2024, several major announcements...
+  As of {current_date}, the sources describe several major announcements...
   
   ## Implications
   
@@ -156,6 +168,18 @@ input_variables:
       Summary: ...
       Key Points: ...
 
+  - name: "current_date"
+    description: "Calendar date when research is run, injected by the pipeline"
+    type: "string"
+    required: true
+    example: "Thursday, 03 September 2026"
+
+  - name: "current_year"
+    description: "Calendar year when research is run, injected by the pipeline"
+    type: "string"
+    required: true
+    example: "2026"
+
 output_format:
   type: "markdown"
   description: "Complete research report in markdown format"
@@ -163,6 +187,7 @@ output_format:
 metadata:
   author: "Research Engine Team"
   created: "2026-09-01"
+  updated: "2026-09-03"
   tags:
     - "report"
     - "compilation"

@@ -13,7 +13,7 @@ python -m pip install -e ".[dev]"
 python -m pip install -r api/requirements.txt
 ```
 
-Configure `.env` as documented in the project root README (LM Studio / OpenAI-compatible endpoint).
+Configure `.env` as documented in the project root README (LM Studio / OpenAI-compatible endpoint, plus `TAVILY_API_KEY` for web search).
 
 ## Run
 
