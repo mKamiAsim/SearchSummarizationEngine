@@ -10,7 +10,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -67,19 +67,26 @@ class Settings(BaseSettings):
     )
 
     langchain_tracing_v2: bool = Field(
-        default=False,
-        description="Enable LangSmith tracing via LANGCHAIN_TRACING_V2",
+        default=True,
+        validation_alias=AliasChoices("LANGSMITH_TRACING", "LANGCHAIN_TRACING_V2"),
+        description="Enable LangSmith tracing when a LangSmith API key is configured",
     )
 
-    langchain_api_key: str = Field(default="", description="LangSmith API key")
+    langchain_api_key: str = Field(
+        default="",
+        validation_alias=AliasChoices("LANGSMITH_API_KEY", "LANGCHAIN_API_KEY"),
+        description="LangSmith API key",
+    )
 
     langchain_project: str = Field(
         default="search-summarization-engine",
+        validation_alias=AliasChoices("LANGSMITH_PROJECT", "LANGCHAIN_PROJECT"),
         description="LangSmith project name",
     )
 
     langchain_endpoint: str = Field(
         default="https://api.smith.langchain.com",
+        validation_alias=AliasChoices("LANGSMITH_ENDPOINT", "LANGCHAIN_ENDPOINT"),
         description="LangSmith API endpoint",
     )
 

@@ -1,0 +1,28 @@
+digraph ResearchGraph {
+    graph [rankdir=LR, bgcolor="white", pad="0.25", nodesep="0.45", ranksep="0.7"];
+    node [shape=box, style="rounded,filled", fillcolor="#e8f0fe", color="#4169a1", fontname=" sans-serif", fontsize=11, margin="0.16,0.10"];
+    edge [color="#52606d", fontname=" sans-serif", fontsize=9];
+
+    START [shape=circle, label="", width=0.22, fixedsize=true, fillcolor="#52606d", color="#52606d"];
+    END [shape=doublecircle, label="", width=0.28, fixedsize=true, fillcolor="white", color="#52606d"];
+
+    select_assistant [label="select_assistant"];
+    generate_search_queries [label="generate_search_queries"];
+    execute_web_search [label="execute_web_search"];
+    scrape_and_summarize [label="scrape_and_summarize"];
+    assess_relevance [label="assess_relevance"];
+    generate_reports [label="generate_reports"];
+    persist_outputs [label="persist_outputs"];
+
+    START -> select_assistant;
+    select_assistant -> generate_search_queries;
+    generate_search_queries -> execute_web_search;
+    execute_web_search -> scrape_and_summarize [label="search results"];
+    execute_web_search -> generate_search_queries [label="retry"];
+    execute_web_search -> generate_reports [label="no results"];
+    scrape_and_summarize -> assess_relevance;
+    assess_relevance -> generate_search_queries [label="low relevance"];
+    assess_relevance -> generate_reports [label="accepted"];
+    generate_reports -> persist_outputs;
+    persist_outputs -> END;
+}

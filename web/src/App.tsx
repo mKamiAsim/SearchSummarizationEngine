@@ -123,7 +123,8 @@ function ReportView({ report }: { report: ResearchReport }) {
         <section className="extra-meta">
           <h3>Metadata</h3>
           <dl>
-            {meta.map(([key, value]) => (
+            {meta.filter(([key,_]) => key !== "relevance_evaluation")
+            .map(([key, value]) => (
               <div key={key} className="meta-item">
                 <dt>{key}</dt>
                 <dd>{value}</dd>

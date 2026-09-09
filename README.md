@@ -164,11 +164,14 @@ print(report.pdf_path)
 Tracing is optional. To enable:
 
 ```dotenv
-LANGCHAIN_TRACING_V2=true
-LANGCHAIN_API_KEY=your-langsmith-api-key
-LANGCHAIN_PROJECT=search-summarization-engine
-LANGCHAIN_ENDPOINT=https://api.smith.langchain.com
+LANGSMITH_TRACING=true
+LANGSMITH_API_KEY=your-langsmith-api-key
+LANGSMITH_PROJECT=search-summarization-engine
+LANGSMITH_ENDPOINT=https://api.smith.langchain.com
 ```
+
+The legacy `LANGCHAIN_TRACING_V2`, `LANGCHAIN_API_KEY`, `LANGCHAIN_PROJECT`, and
+`LANGCHAIN_ENDPOINT` names are also supported.
 
 ## Testing
 
