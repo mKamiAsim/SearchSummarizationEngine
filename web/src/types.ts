@@ -1,4 +1,4 @@
-/** Mirrors `ResearchReport` from the orchestrator / POST /research. */
+/** Mirrors `ResearchReport` from POST /research. */
 export type ResearchReport = {
   user_question: string;
   report_content: string;
@@ -7,6 +7,9 @@ export type ResearchReport = {
   summary_count: number;
   generated_at: string;
   metadata: Record<string, unknown>;
+  report_mode?: string;
+  markdown_path?: string;
+  pdf_path?: string;
 };
 
 export type ApiErrorBody = {

@@ -1,379 +1,208 @@
 """
-Main orchestrator for the research summarization engine.
-
-This module coordinates all pipeline stages and provides the primary interface
-for executing research queries.
+LangGraph research orchestrator — primary CLI and library entrypoint.
 """
+
+from __future__ import annotations
 
 import argparse
 import logging
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from langsmith import traceable
 
-from .chains import (
-    select_assistant,
-    generate_search_queries,
-    summarize_content,
-    compile_report,
-)
 from .config.settings import Settings, get_settings
-from .core.models import PipelineState, ResearchReport
+from .core.models import ResearchReport
 from .core.observability import configure_langsmith
-from .utils import scrape_urls, setup_logging, get_logger, search_multiple_queries
+from .graph.builder import get_compiled_graph
+from .graph.state import initial_state
+from .utils import get_logger, setup_logging
 
 logger = get_logger("orchestrator")
 
 
 class ResearchOrchestrator:
-    """
-    Orchestrates the complete research pipeline.
-
-    This class coordinates all 5 stages of the research engine:
-    1. Assistant Selection
-    2. Search Query Generation
-    3. Web Search Execution
-    4. Content Summarization
-    5. Report Compilation
-
-    Example:
-        >>> orchestrator = ResearchOrchestrator()
-        >>> report = orchestrator.run("What are the latest developments in quantum computing?")
-        >>> print(report.report_content)
-    """
+    """Runs the LangGraph research pipeline."""
 
     def __init__(self, settings: Settings | None = None):
-        """
-        Initialize the research orchestrator.
-
-        Args:
-            settings: Custom settings. If None, uses cached global settings.
-        """
         self.settings = settings if settings else get_settings()
         configure_langsmith(self.settings)
         self._setup_logging()
-
-        logger.info("ResearchOrchestrator initialized")
-        logger.debug(f"Settings: num_queries={self.settings.num_search_queries}, "
-                     f"results_per_query={self.settings.num_search_results_per_query}")
+        self._graph = get_compiled_graph()
+        logger.info("ResearchOrchestrator initialized (LangGraph)")
 
     def _setup_logging(self) -> None:
-        """Configure logging if not already done."""
-        # Check if root logger has handlers
         root_logger = logging.getLogger()
         if not root_logger.handlers:
             setup_logging(self.settings)
 
-    @traceable(name="Research Pipeline", run_type="chain")
+    @traceable(name="LangGraph Research Pipeline", run_type="chain")
     def run(
         self,
         user_question: str,
         save_to_file: str | None = None,
-        include_citations: bool | None = None,
-        include_search_queries: bool | None = None,
+        generate_pdf: bool | None = None,
     ) -> ResearchReport:
-        """
-        Execute the complete research pipeline.
-
-        Args:
-            user_question: The research question to investigate
-            save_to_file: Optional filepath to save the report (markdown)
-            include_citations: Whether to include source URLs (default from settings)
-            include_search_queries: Whether to include queries in report (default from settings)
-
-        Returns:
-            ResearchReport: Complete research report
-
-        Raises:
-            ValueError: If user_question is empty
-            RuntimeError: If pipeline fails critically
-
-        Example:
-            >>> orchestrator = ResearchOrchestrator()
-            >>> report = orchestrator.run("What is quantum entanglement?")
-            >>> print(f"Report: {report.get_word_count()} words")
-            >>> report.save_to_file("reports/quantum_entanglement.md")
-        """
+        """Execute the LangGraph research pipeline."""
         if not user_question or not user_question.strip():
             raise ValueError("user_question cannot be empty")
 
-        # Initialize pipeline state
         start_time = time.time()
-        state = PipelineState(user_question=user_question.strip())
+        pdf_flag = (
+            self.settings.generate_pdf if generate_pdf is None else generate_pdf
+        )
+
+        state = initial_state(
+            user_question.strip(),
+            max_retries=self.settings.max_relevance_retries,
+            save_to_file=save_to_file,
+            generate_pdf=pdf_flag,
+        )
 
         logger.info("=" * 80)
-        logger.info(
-            f"Starting research pipeline for: '{user_question[:100]}...'")
+        logger.info("Starting research for: '%s...'", user_question[:100])
         logger.info("=" * 80)
 
         try:
-            # =========================================================================
-            # Stage 1: Assistant Selection
-            # =========================================================================
-            logger.info("\n[Stage 1/5] Selecting assistant persona...")
-            persona = select_assistant(state.user_question)
-            state.assistant_persona = persona
-            logger.info(f"✓ Selected: {persona.persona}")
+            final_state = self._graph.invoke(state)
+        except Exception as exc:
+            logger.error("Pipeline failed: %s", exc, exc_info=True)
+            raise RuntimeError(f"Research pipeline failed: {exc}") from exc
 
-            # =========================================================================
-            # Stage 2: Search Query Generation
-            # =========================================================================
-            logger.info("\n[Stage 2/5] Generating search queries...")
-            query_result = generate_search_queries(
-                state.user_question,
-                persona,
-                num_queries=self.settings.num_search_queries,
-            )
-            state.search_queries = query_result.queries
-            logger.info(
-                f"✓ Generated {len(query_result.queries)} queries: {query_result.queries}")
+        execution_time_ms = int((time.time() - start_time) * 1000)
+        markdown = final_state.get("markdown_report") or ""
+        sources = list(final_state.get("sources") or [])
+        passed = list(final_state.get("passed_summaries") or [])
+        report_mode = final_state.get("report_mode") or "full"
+        prior = list(final_state.get("prior_search_queries") or [])
+        current = list(final_state.get("search_queries") or [])
 
-            # =========================================================================
-            # Stage 3: Web Search Execution
-            # =========================================================================
-            logger.info("\n[Stage 3/5] Executing web searches...")
-            all_search_results = search_multiple_queries(
-                state.search_queries,
-                results_per_query=self.settings.num_search_results_per_query,
-                delay_between_queries=self.settings.search_delay_seconds,
-                user_question=state.user_question,
-            )
-            state.search_results = all_search_results
-            logger.info(f"✓ Found {len(all_search_results)} unique URLs")
+        report = ResearchReport(
+            user_question=user_question.strip(),
+            report_content=markdown,
+            search_queries_used=prior + current,
+            sources=sources,
+            summary_count=len(passed),
+            generated_at=datetime.now(timezone.utc).isoformat(),
+            metadata={
+                "engine": "langgraph",
+                "report_mode": report_mode,
+                "retry_count": final_state.get("retry_count", 0),
+                "relevance_evaluation": final_state.get("relevance_evaluation"),
+                "persona": (final_state.get("assistant_persona") or {}).get("persona"),
+                "execution_time_ms": execution_time_ms,
+            },
+            report_mode=report_mode,
+            markdown_path=str(final_state.get("markdown_path") or ""),
+            pdf_path=str(final_state.get("pdf_path") or ""),
+        )
 
-            if not all_search_results:
-                logger.warning(
-                    "No search results found - proceeding with empty results")
-
-            # =========================================================================
-            # Stage 4: Content Summarization
-            # =========================================================================
-            logger.info("\n[Stage 4/5] Scraping and summarizing content...")
-
-            # Extract URLs from search results
-            urls = [result.url for result in all_search_results if result.url]
-
-            if urls:
-                # Scrape all URLs
-                scraped_contents = scrape_urls(
-                    urls,
-                    max_characters_per_url=self.settings.result_text_max_characters,
-                )
-                state.scraped_content = scraped_contents
-
-                # Summarize each scraped content
-                summaries = []
-                for scraped in scraped_contents:
-                    # Find the corresponding search query
-                    search_query = ""
-                    for result in all_search_results:
-                        if result.url == scraped.url:
-                            search_query = result.search_query
-                            break
-
-                    summary = summarize_content(
-                        scraped_content=scraped,
-                        user_question=state.user_question,
-                        search_query=search_query,
-                    )
-                    summaries.append(summary)
-
-                state.summaries = summaries
-                logger.info(f"✓ Summarized {len(summaries)} sources")
-            else:
-                logger.warning(
-                    "No URLs to scrape - proceeding with empty summaries")
-                state.summaries = []
-
-            # =========================================================================
-            # Stage 5: Report Compilation
-            # =========================================================================
-            logger.info("\n[Stage 5/5] Compiling research report...")
-
-            # Use settings defaults if not specified
-            if include_citations is None:
-                include_citations = self.settings.include_citations
-            if include_search_queries is None:
-                include_search_queries = self.settings.include_search_queries
-
-            report = compile_report(
-                user_question=state.user_question,
-                summaries=state.summaries,
-                persona=persona,
-                search_queries=state.search_queries,
-                include_citations=include_citations,
-                include_search_queries=include_search_queries,
-            )
-            state.final_report = report
-            logger.info(
-                f"✓ Report compiled: {report.get_word_count()} words, {report.get_source_count()} sources")
-
-            # =========================================================================
-            # Save to file if requested
-            # =========================================================================
-            if save_to_file:
-                self._save_report(report, save_to_file)
-
-            # Calculate execution time
-            execution_time_ms = int((time.time() - start_time) * 1000)
-            state.execution_time_ms = execution_time_ms
-
-            logger.info("\n" + "=" * 80)
-            logger.info(
-                f"✓ Research pipeline completed in {execution_time_ms / 1000:.1f}s")
-            logger.info("=" * 80)
-
-            return report
-
-        except Exception as e:
-            logger.error(f"Pipeline failed: {e}", exc_info=True)
-            state.add_error(str(e))
-            raise RuntimeError(f"Research pipeline failed: {e}") from e
-
-    def _save_report(self, report: ResearchReport, filepath: str) -> None:
-        """
-        Save report to file.
-
-        Args:
-            report: Report to save
-            filepath: Destination filepath
-        """
-        path = Path(filepath)
-
-        # Create parent directories if needed
-        path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Save report
-        report.save_to_file(str(path))
-
-        logger.info(f"✓ Report saved to: {path}")
+        logger.info(
+            "Research complete in %.1fs (%s words, %s sources, mode=%s)",
+            execution_time_ms / 1000,
+            report.get_word_count(),
+            report.get_source_count(),
+            report_mode,
+        )
+        return report
 
     def run_batch(
         self,
         questions: list[str],
         output_dir: str | None = None,
     ) -> list[ResearchReport]:
-        """
-        Run research pipeline for multiple questions.
-
-        Args:
-            questions: List of research questions
-            output_dir: Directory to save reports (default: settings.output_dir)
-
-        Returns:
-            list[ResearchReport]: List of generated reports
-
-        Example:
-            >>> orchestrator = ResearchOrchestrator()
-            >>> questions = ["What is AI?", "What is quantum computing?"]
-            >>> reports = orchestrator.run_batch(questions, output_dir="reports")
-        """
+        """Run the pipeline for multiple questions."""
         if output_dir is None:
             output_dir = self.settings.output_dir
 
-        reports = []
-
+        reports: list[ResearchReport] = []
         for idx, question in enumerate(questions, start=1):
-            logger.info(f"\n{'='*80}")
-            logger.info(f"Processing question {idx}/{len(questions)}")
-            logger.info(f"{'='*80}\n")
-
-            # Generate filename from question
+            logger.info("Processing question %s/%s", idx, len(questions))
             safe_filename = "".join(
-                c if c.isalnum() or c in " -_" else "_" for c in question[:50])
+                c if c.isalnum() or c in " -_" else "_" for c in question[:50]
+            )
             safe_filename = safe_filename.replace(" ", "_").lower()
             filepath = Path(output_dir) / f"{safe_filename}.md"
-
             try:
-                report = self.run(question, save_to_file=str(filepath))
-                reports.append(report)
-            except Exception as e:
-                logger.error(f"Failed to process question {idx}: {e}")
-                # Continue with next question
-
-        logger.info(
-            f"\nBatch complete: {len(reports)}/{len(questions)} successful")
-
+                reports.append(self.run(question, save_to_file=str(filepath)))
+            except Exception as exc:
+                logger.error("Failed to process question %s: %s", idx, exc)
         return reports
 
 
-def main():
-    """Command-line interface for the research engine."""
+def main() -> int:
+    """CLI entrypoint."""
     parser = argparse.ArgumentParser(
-        description="Research Summarization Engine - Autonomous web research with LLMs",
+        description="Research Summarization Engine (LangGraph)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Run a single research query
-  python -m src.orchestrator "What are the latest developments in quantum computing?"
-  
-  # Save report to specific file
-  python -m src.orchestrator "Explain transformer architecture" --output reports/transformers.md
-  
-  # Run with debug logging
-  python -m src.orchestrator "What is reinforcement learning?" --log-level DEBUG
+  research-engine "What are the latest developments in quantum computing?"
+  research-engine "Compare product A and B" --output reports/compare.md
+  research-engine "Explain transformers" --no-pdf
         """,
     )
-
+    parser.add_argument("question", type=str, help="Research question")
     parser.add_argument(
-        "question",
-        type=str,
-        help="Research question to investigate",
-    )
-    parser.add_argument(
-        "--output", "-o",
+        "--output",
+        "-o",
         type=str,
         default=None,
-        help="Output filepath for the report (default: reports/<timestamp>.md)",
+        help="Markdown output path (PDF written alongside when enabled)",
+    )
+    parser.add_argument(
+        "--no-pdf",
+        action="store_true",
+        help="Skip PDF generation",
     )
     parser.add_argument(
         "--log-level",
         type=str,
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
         default="INFO",
-        help="Logging level (default: INFO)",
     )
-
     args = parser.parse_args()
 
-    # Initialize orchestrator
     settings = get_settings()
     settings.log_level = args.log_level
     setup_logging(settings)
 
     orchestrator = ResearchOrchestrator(settings=settings)
 
-    # Generate output filename if not specified
     output_file = args.output
     if output_file is None:
-        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         safe_question = "".join(
-            c if c.isalnum() or c in " -_" else "_" for c in args.question[:30])
+            c if c.isalnum() or c in " -_" else "_" for c in args.question[:30]
+        )
         output_file = f"reports/{timestamp}_{safe_question}.md"
 
-    # Run research
     try:
-        report = orchestrator.run(args.question, save_to_file=output_file)
-
-        # Print summary
+        report = orchestrator.run(
+            args.question,
+            save_to_file=output_file,
+            generate_pdf=not args.no_pdf,
+        )
         print("\n" + "=" * 80)
         print("RESEARCH COMPLETE")
         print("=" * 80)
         print(f"Question: {args.question}")
         print(
-            f"Report: {report.get_word_count()} words, {report.get_source_count()} sources")
-        print(f"Output: {output_file}")
+            f"Report: {report.get_word_count()} words, "
+            f"{report.get_source_count()} sources"
+        )
+        print(f"Mode: {report.report_mode}")
+        print(f"Markdown: {report.markdown_path or output_file}")
+        if report.pdf_path:
+            print(f"PDF: {report.pdf_path}")
         print("=" * 80)
-
-    except Exception as e:
-        logger.error(f"Research failed: {e}")
-        print(f"\nError: {e}")
+        return 0
+    except Exception as exc:
+        logger.error("Research failed: %s", exc)
+        print(f"\nError: {exc}")
         return 1
-
-    return 0
 
 
 if __name__ == "__main__":
-    exit(main())
+    raise SystemExit(main())

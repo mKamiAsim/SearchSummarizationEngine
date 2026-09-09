@@ -114,7 +114,8 @@ def setup_logging(settings: Settings | None = None) -> logging.Logger:
     logging.getLogger("urllib3").setLevel(logging.WARNING)
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
-    logging.getLogger("langchain").setLevel(logging.WARNING)
+    logging.getLogger("openai").setLevel(logging.WARNING)
+    logging.getLogger("langsmith").setLevel(logging.WARNING)
 
     # Create application logger
     app_logger = logging.getLogger("research_engine")
@@ -140,7 +141,7 @@ def get_logger(name: str) -> logging.Logger:
     application's logger hierarchy.
 
     Args:
-        name: Logger name (e.g., "orchestrator", "chains.summarization")
+        name: Logger name (e.g., "orchestrator", "graph.relevance")
 
     Returns:
         logging.Logger: Configured logger instance

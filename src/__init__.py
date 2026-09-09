@@ -1,11 +1,10 @@
 """
 Research Summarization Engine
 
-A professional-grade research summarization engine built with LangChain and LCEL.
-This package provides autonomous web research capabilities with local LLM support.
+LangGraph-based research summarization with dual Markdown/PDF output.
 """
 
-__version__ = "1.0.0"
+__version__ = "2.0.0"
 __author__ = "Your Name"
 __email__ = "your.email@example.com"
 

@@ -1,39 +1,42 @@
 # Search Summarizer UI
 
-Vite + React + TypeScript chat UI for the Search Summarizer API. Each send is an independent `POST /research` call. Prior Q&A cards stay in this tab for scrolling; they are **not** sent back to the API.
+Vite + React + TypeScript UI for the LangGraph research API.
 
-## Prerequisites
+Each send is an independent `POST /research` call. Prior Q&A cards stay visible
+in the tab for scrolling; they are **not** sent back to the API.
 
-The API should already be running on port 8000 (see `api/README.md`):
+## Recommended: start with API
+
+From the repository root:
 
 ```powershell
-uvicorn api.main:app --reload --host 127.0.0.1 --port 8000
+python serve.py
 ```
 
-## Configure
+- Web UI: http://127.0.0.1:4001
+- API: http://127.0.0.1:8000
 
-Copy `.env.example` to `.env` if needed. Default:
+## Manual run
+
+```powershell
+cd web
+npm install
+```
+
+Create `.env` (or let `serve.py` write it):
 
 ```
 VITE_API_BASE_URL=http://127.0.0.1:8000
 ```
 
-Restart `npm run dev` after changing env vars.
-
-## Run
-
 ```powershell
-cd web
-npm install
 npm run dev
 ```
-
-The app is served at **http://localhost:5173**.
 
 ## Scripts
 
 | Command | Purpose |
 | --- | --- |
-| `npm run dev` | Local Vite server (port 5173) |
-| `npm run build` | Production build |
-| `npm run preview` | Preview the production build (port 4173) |
+| `npm run dev` | Local Vite server (port **4001**) |
+| `npm run build` | Production build into `web/dist` |
+| `npm run preview` | Preview the production build |

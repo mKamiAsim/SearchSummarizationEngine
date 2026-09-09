@@ -1,4 +1,4 @@
-# API-only dependencies. Install the existing agent extras separately
-# (see repository root requirements / `pip install -e ".[dev]"`).
+# FastAPI is installed with the root package (`pip install -e .`).
+# This file is kept for documentation / minimal API-only installs.
 fastapi>=0.115.0
 uvicorn[standard]>=0.32.0

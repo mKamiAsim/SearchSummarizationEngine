@@ -67,7 +67,7 @@ class Settings(BaseSettings):
     )
 
     langchain_tracing_v2: bool = Field(
-        default=True,
+        default=False,
         description="Enable LangSmith tracing via LANGCHAIN_TRACING_V2",
     )
 
@@ -92,6 +92,62 @@ class Settings(BaseSettings):
         ge=1,
         le=10,
         description="Number of search queries to generate per user question",
+    )
+
+    max_relevance_retries: int = Field(
+        default=3,
+        ge=0,
+        le=10,
+        description="Max times to regenerate queries when relevance is below threshold",
+    )
+
+    search_retry_attempts: int = Field(
+        default=3,
+        ge=1,
+        le=10,
+        description="Retry attempts per search query on empty/failed results",
+    )
+
+    search_retry_backoff: float = Field(
+        default=1.5,
+        gt=0.0,
+        description="Backoff seconds multiplier between search retries",
+    )
+
+    relevance_pass_threshold_pct: float = Field(
+        default=50.0,
+        ge=0.0,
+        le=100.0,
+        description="Minimum percent of summaries that must pass relevance to write a full report",
+    )
+
+    relevance_llm_min_score: float = Field(
+        default=3.5,
+        ge=1.0,
+        le=5.0,
+        description="Minimum LLM relevance score (1-5) for a summary to pass",
+    )
+
+    relevance_embedding_min: float = Field(
+        default=0.45,
+        ge=0.0,
+        le=1.0,
+        description="Minimum embedding cosine similarity for a summary to pass",
+    )
+
+    embedding_backend: Literal["sentence_transformers"] = Field(
+        default="sentence_transformers",
+        description="Embedding backend for semantic relevance scoring",
+    )
+
+    embedding_model_name: str = Field(
+        default="sentence-transformers/all-MiniLM-L6-v2",
+        description="Hugging Face sentence-transformers model for embeddings",
+    )
+
+    generate_pdf: bool = Field(
+        default=True,
+        description="Also write a PDF report alongside Markdown (LangGraph path)",
     )
 
     num_search_results_per_query: int = Field(
@@ -210,8 +266,8 @@ class Settings(BaseSettings):
     )
 
     include_search_queries: bool = Field(
-        default=True,
-        description="Include generated search queries in reports",
+        default=False,
+        description="Include generated search queries in report metadata (not in report body)",
     )
 
     # =========================================================================
@@ -257,11 +313,6 @@ class Settings(BaseSettings):
     def project_root(self) -> Path:
         """Get project root directory."""
         return Path(__file__).parent.parent.parent
-
-    @property
-    def prompts_dir(self) -> Path:
-        """Get prompts directory path."""
-        return self.project_root / "src" / "prompts"
 
     @property
     def logs_dir(self) -> Path:

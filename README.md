@@ -1,33 +1,37 @@
 # Search Summarization Engine
 
-An extensible research pipeline built with LangChain and LCEL. It turns a natural-language question into targeted web searches, source summaries, and a cited Markdown report. The default configuration targets a local LM Studio OpenAI-compatible endpoint, while any compatible OpenAI API can be configured through environment variables.
+LangGraph research pipeline that turns a natural-language question into
+relevance-gated web research and dual cited reports (**Markdown + PDF**).
+
+Configured by default for a local **LM Studio** OpenAI-compatible endpoint.
+Any compatible chat API works via environment variables.
 
 ## Architecture
 
 ```text
 User question
-	|
-	v
-ResearchOrchestrator
-	|-- 1. Assistant selection       -> AssistantPersona
-	|-- 2. Query generation           -> SearchQueryGeneration
-	|-- 3. Web search                 -> SearchResult[]
-	|-- 4. Scrape + summarize         -> ScrapedContent[] -> SummarizedResult[]
-	|-- 5. Report compilation         -> ResearchReport
-	`-- optional Markdown persistence -> reports/
+    |
+    v
+LangGraph StateGraph
+    |-- select_assistant
+    |-- generate_search_queries  <-----------------------------+
+    |-- execute_web_search                                      |
+    |       | empty/low quality & retries left -----------------+
+    |-- scrape_and_summarize
+    |-- assess_relevance  (HF embeddings + LLM 1-5 scoring)
+    |       | relevance < 50% & retries left -------------------+
+    |-- generate_reports  (full OR insufficient-sources caution)
+    `-- persist_outputs   -> reports/*.md + reports/*.pdf
 ```
 
-`src/orchestrator.py` owns the workflow and records intermediate values in `PipelineState`. Each LLM stage is implemented as an LCEL chain:
-
-```text
-YAML PromptTemplate | ChatOpenAI | RobustPydanticParser
-```
-
-Prompt files live in `src/prompts/`; Pydantic models in `src/core/models.py` define the contracts between stages. `src/utils/web_searching.py` and `src/utils/web_scraping.py` isolate external web access, making those boundaries straightforward to mock in tests.
+Prompts live in `src/graph/prompts.py`. Relevance uses local Hugging Face
+sentence embeddings (`sentence-transformers/all-MiniLM-L6-v2`) plus LLM
+component-aware scoring. Chat completions use `langchain-openai` as the
+OpenAI-compatible adapter for LangGraph (not a separate LCEL chain stack).
 
 ## Installation
 
-Requires Python 3.10 or newer.
+Requires **Python 3.10+** and **Node.js 18+** (for the Web UI).
 
 ```powershell
 python -m venv .venv
@@ -37,7 +41,7 @@ python -m pip install -e ".[dev]"
 
 ## Configuration
 
-Copy the values below into `.env` and adjust them for your provider:
+Create a `.env` in the project root:
 
 ```dotenv
 OPENAI_API_KEY=lm-studio
@@ -46,35 +50,100 @@ OPENAI_MODEL_NAME=qwen/qwen3.5-4b
 OPENAI_TEMPERATURE=0.3
 OPENAI_MAX_TOKENS=12288
 
+MAX_RELEVANCE_RETRIES=3
+GENERATE_PDF=true
+
+# Local Hugging Face embeddings for relevance scoring (not the chat LLM)
+EMBEDDING_BACKEND=sentence_transformers
+EMBEDDING_MODEL_NAME=sentence-transformers/all-MiniLM-L6-v2
+
 # Web search: Tavily is required for reliable results.
-# DuckDuckGo's unofficial API often returns empty lists (rate limits / HTML changes).
 # Get a key at https://app.tavily.com
 TAVILY_API_KEY=tvly-your-key
 SEARCH_BACKEND=tavily
-# TAVILY_SEARCH_DEPTH=basic
 ```
 
-Settings are defined and validated in `src/config/settings.py`. Environment variables override defaults. The API base is normalized to end in `/v1`; the default local setup does not require a cloud key.
+## Host Web API + Web UI
 
-## LangSmith Observability
+### One command (recommended)
 
-Tracing is disabled by default. To enable LangSmith, add the following to `.env`:
+From the repository root:
 
-```dotenv
-LANGCHAIN_TRACING_V2=true
-LANGCHAIN_API_KEY=your-langsmith-api-key
-LANGCHAIN_PROJECT=search-summarization-engine
-LANGCHAIN_ENDPOINT=https://api.smith.langchain.com
+```powershell
+python serve.py
 ```
 
-`ResearchOrchestrator` configures these standard LangChain variables before creating chains. This captures the pipeline's LLM and runnable traces in the selected LangSmith project without changing application behavior. Keep the API key in a local, uncommitted `.env` file.
+This starts:
 
-## Usage
+| Service | URL |
+| --- | --- |
+| Web UI (Vite) | http://127.0.0.1:4001 |
+| Web API | http://127.0.0.1:8000 |
+| OpenAPI docs | http://127.0.0.1:8000/docs |
 
-CLI:
+Press **Ctrl+C** to stop both processes.
+
+Other modes:
+
+```powershell
+# API only
+python serve.py --api-only
+
+# Web UI only (expects API already running)
+python serve.py --ui-only
+
+# Production: build UI and serve API + SPA from one process
+python serve.py --prod
+```
+
+Production URL after `python serve.py --prod`:
+
+- App + API: http://127.0.0.1:8000
+- Docs: http://127.0.0.1:8000/docs
+
+Equivalent package entrypoint:
+
+```powershell
+research-serve
+```
+
+### Manual (two terminals)
+
+API:
+
+```powershell
+uvicorn api.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+Web UI:
+
+```powershell
+cd web
+npm install
+# web/.env → VITE_API_BASE_URL=http://127.0.0.1:8000
+npm run dev
+```
+
+### API endpoints
+
+| Method | Path | Body | Response |
+| --- | --- | --- | --- |
+| `GET` | `/health` | — | `{"status": "ok"}` |
+| `POST` | `/research` | `{"query": "string"}` | Research report JSON |
+
+```powershell
+curl -X POST http://127.0.0.1:8000/research `
+  -H "Content-Type: application/json" `
+  -d "{\"query\": \"What is quantum entanglement?\"}"
+```
+
+Each `POST /research` call is an independent LangGraph run (no chat memory).
+
+## CLI usage
 
 ```powershell
 research-engine "What are the latest developments in quantum computing?"
+research-engine "Compare A and B" --output reports/compare.md --no-pdf
 ```
 
 Python:
@@ -83,39 +152,49 @@ Python:
 from src.orchestrator import ResearchOrchestrator
 
 report = ResearchOrchestrator().run(
-	"What are the latest developments in quantum computing?",
-	save_to_file="reports/quantum_computing.md",
+    "What are the latest developments in quantum computing?",
+    save_to_file="reports/quantum_computing.md",
 )
 print(report.report_content)
+print(report.pdf_path)
 ```
 
-## Testing and Quality Checks
+## LangSmith Observability
+
+Tracing is optional. To enable:
+
+```dotenv
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=your-langsmith-api-key
+LANGCHAIN_PROJECT=search-summarization-engine
+LANGCHAIN_ENDPOINT=https://api.smith.langchain.com
+```
+
+## Testing
 
 ```powershell
 python -m pytest -o addopts="" tests
-ruff check src tests
-mypy src tests
-python -c "import src; print(src.__version__)"
+ruff check src tests api serve.py
 ```
 
-The test suite currently focuses on structured-output parsing. Web access and LLM calls should be covered with mocked integration tests as the pipeline evolves.
-
-## Project Layout
+## Project layout
 
 ```text
+serve.py                      Start API + Web UI together
+api/                          FastAPI service (+ optional SPA mount)
+web/                          Vite + React interactive UI
 src/
-  orchestrator.py             Pipeline and CLI entry point
-  chains/                     Five-stage LLM chain implementations
-  config/settings.py          Validated environment-backed configuration
-  core/models.py              Pydantic pipeline contracts
-  core/llm_factory.py         Shared ChatOpenAI factory
-  core/observability.py       LangSmith environment configuration
-  prompts/                    YAML prompt templates
-  utils/                      Logging, web search, scraping, and parsers
-tests/                         Automated tests
-reports/                       Example and generated reports
+  orchestrator.py             LangGraph CLI / library entry
+  graph/                      StateGraph, nodes, prompts, scoring, routing
+  config/settings.py          Environment-backed settings
+  core/                       Models, LLM factory, observability
+  utils/                      Search, scrape, PDF, parsers, logging
+tests/
+reports/
 ```
 
-## Error Handling and Security
+## Error handling and security
 
-The orchestrator wraps pipeline failures in `RuntimeError` while retaining the original exception as its cause. External content is treated as untrusted input and should not be given additional privileges. Credentials belong in environment variables and are intentionally masked by the settings string representation; do not place them in prompts, logs, or reports.
+Pipeline failures raise `RuntimeError` with the original cause retained.
+External web content is untrusted input. Keep credentials in `.env` only —
+never in prompts, logs, or generated reports.

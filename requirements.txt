@@ -1,7 +1,13 @@
-# Core LangChain dependencies
-langchain>=1.3.9
+# LangGraph + OpenAI-compatible chat model adapter
+langgraph>=0.6.0
 langchain-openai>=1.1.7
-langchain-community>=0.4.1
+langchain-core>=0.3.0
+
+# Local embeddings for relevance scoring
+sentence-transformers>=3.0.0
+
+# PDF report generation (pure Python; Windows + Linux)
+reportlab>=4.2.0
 
 # Web scraping and searching
 beautifulsoup4>=4.14.2
@@ -18,7 +24,10 @@ python-dotenv>=1.2.1
 # Logging and observability
 python-json-logger>=4.0.0
 langsmith>=0.6.8
-PyYAML>=6.0.3
+
+# Web API
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
 
 # Testing
 pytest>=7.4.0

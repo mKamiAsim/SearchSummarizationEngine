@@ -15,7 +15,6 @@ class AssistantPersona(BaseModel):
     Model for assistant persona selection output.
 
     Represents the expert persona selected to answer a research question.
-    Used in Stage 1 of the pipeline.
 
     Attributes:
         persona: Expert role/title (e.g., "Quantum Computing Researcher")
@@ -40,29 +39,6 @@ class AssistantPersona(BaseModel):
     )
 
 
-class SearchQueryGeneration(BaseModel):
-    """
-    Model for search query generation output.
-
-    Represents the structured output from Stage 2 of the pipeline.
-
-    Attributes:
-        queries: List of search queries to execute
-        reasoning: Explanation of why these queries were chosen
-    """
-
-    queries: list[str] = Field(
-        ...,
-        description="List of search queries to execute",
-        min_length=1,
-        max_length=10,
-    )
-    reasoning: str = Field(
-        ...,
-        description="Reasoning for query selection",
-    )
-
-
 class SearchResult(BaseModel):
     """
     Model for a single search result.
@@ -83,7 +59,7 @@ class SearchResult(BaseModel):
     search_query: str = Field(...,
                               description="Query that produced this result")
     rank: int = Field(
-        default=0, description="Position in search results", ge=1)
+        default=0, description="Position in search results", ge=0)
 
 
 class ScrapedContent(BaseModel):
@@ -115,34 +91,6 @@ class ScrapedContent(BaseModel):
         return self.success and len(self.content.strip()) > 0
 
 
-class SummarizedResult(BaseModel):
-    """
-    Model for a summarized search result.
-
-    Represents the summary of a single scraped web page.
-
-    Attributes:
-        url: Source URL
-        summary: Generated summary text
-        search_query: Original search query
-        user_question: Original user question
-        key_points: List of key points extracted
-        relevance_score: Estimated relevance (0-100)
-    """
-
-    url: str = Field(..., description="Source URL")
-    summary: str = Field(..., description="Generated summary")
-    search_query: str = Field(..., description="Search query used")
-    user_question: str = Field(..., description="Original user question")
-    key_points: list[str] = Field(
-        default_factory=list, description="Key points")
-    relevance_score: int = Field(
-        default=50, description="Relevance 0-100", ge=0, le=100)
-    source_type: str = Field(default="web", description="Type of source")
-    credibility_notes: str = Field(
-        default="", description="Notes about source credibility")
-
-
 class ResearchReport(BaseModel):
     """
     Model for the final research report.
@@ -157,6 +105,9 @@ class ResearchReport(BaseModel):
         summary_count: Number of results summarized
         generated_at: Timestamp (ISO format string)
         metadata: Additional metadata
+        report_mode: full | insufficient_sources
+        markdown_path: Path to saved Markdown file if persisted
+        pdf_path: Path to saved PDF file if persisted
     """
 
     user_question: str = Field(..., description="Original research question")
@@ -172,6 +123,13 @@ class ResearchReport(BaseModel):
         default="", description="Generation timestamp (ISO)")
     metadata: dict[str, Any] = Field(
         default_factory=dict, description="Additional metadata")
+    report_mode: str = Field(
+        default="full",
+        description="Report confidence mode: full or insufficient_sources",
+    )
+    markdown_path: str = Field(
+        default="", description="Saved Markdown filepath if any")
+    pdf_path: str = Field(default="", description="Saved PDF filepath if any")
 
     def save_to_file(self, filepath: str) -> None:
         """
@@ -193,64 +151,3 @@ class ResearchReport(BaseModel):
     def get_source_count(self) -> int:
         """Get number of unique sources."""
         return len(set(self.sources))
-
-
-class PipelineState(BaseModel):
-    """
-    Model for tracking pipeline execution state.
-
-    Used internally to pass data between pipeline stages.
-
-    Attributes:
-        user_question: Original question
-        assistant_persona: Selected persona
-        search_queries: Generated queries
-        search_results: Raw search results
-        scraped_content: Scraped page content
-        summaries: Per-result summaries
-        final_report: Compiled report
-        errors: List of errors encountered
-        execution_time_ms: Total execution time in milliseconds
-    """
-
-    user_question: str = Field(..., description="Original research question")
-    assistant_persona: AssistantPersona | None = Field(
-        default=None,
-        description="Selected assistant persona",
-    )
-    search_queries: list[str] = Field(
-        default_factory=list, description="Generated queries")
-    search_results: list[SearchResult] = Field(
-        default_factory=list,
-        description="Raw search results",
-    )
-    scraped_content: list[ScrapedContent] = Field(
-        default_factory=list,
-        description="Scraped content from URLs",
-    )
-    summaries: list[SummarizedResult] = Field(
-        default_factory=list,
-        description="Per-result summaries",
-    )
-    final_report: ResearchReport | None = Field(
-        default=None,
-        description="Final compiled report",
-    )
-    errors: list[str] = Field(default_factory=list,
-                              description="Errors encountered")
-    execution_time_ms: int = Field(
-        default=0, description="Execution time in ms")
-
-    def add_error(self, error: str) -> None:
-        """Add an error to the error list."""
-        self.errors.append(error)
-
-    def has_errors(self) -> bool:
-        """Check if any errors occurred."""
-        return len(self.errors) > 0
-
-    def get_error_summary(self) -> str:
-        """Get formatted error summary."""
-        if not self.errors:
-            return "No errors"
-        return f"{len(self.errors)} error(s): {'; '.join(self.errors)}"
