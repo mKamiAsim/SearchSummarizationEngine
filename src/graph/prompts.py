@@ -72,6 +72,9 @@ Respond ONLY with valid JSON:
 
 {{
   "queries": ["query 1", "query 2"],
+  "components": [
+    {{"name": "short requirement", "search_queries": ["focused query"]}}
+  ],
   "reasoning": "Brief explanation of coverage strategy"
 }}
 """
@@ -116,6 +119,9 @@ Respond ONLY with valid JSON:
 
 {{
   "queries": ["query 1", "query 2"],
+  "components": [
+    {{"name": "short requirement", "search_queries": ["focused query"]}}
+  ],
   "reasoning": "How these queries differ from prior attempts"
 }}
 """
@@ -257,15 +263,23 @@ Approach: {assistant_approach}
 Write a comprehensive Markdown report that answers the research question using ONLY \
 the evidence above.
 
-## Required Structure
+Choose the report structure dynamically. Include only sections that help answer the \
+question. Do not add a generic Background section unless context is necessary. For \
+comparisons, prioritize a decision-oriented comparison table, evaluation criteria, \
+trade-offs, workload-specific analysis, and a recommendation. For explanatory \
+questions, prioritize the explanation and examples. For analytical questions, include \
+assumptions, evidence quality, limitations, and uncertainty where relevant.
+
+## Possible Structure (select and adapt, do not include all automatically)
 # {{Clear descriptive title}}
 
 ## Executive Summary
-## Background
-## Detailed Analysis
-(Use subsections as needed)
-## Key Findings
-## Recommendations
+## Comparison / Analysis / Explanation
+(Use the heading that fits the question.)
+## Evidence Quality and Limitations
+(Include when evidence is incomplete, conflicting, or not directly comparable.)
+## Recommendation / Decision Guidance
+(Include when the user asks which option is suitable.)
 ## References
 (Numbered list matching inline citations)
 
@@ -345,3 +359,70 @@ Return the full Markdown document only.
 """
 
 INSUFFICIENT_REPORT_PROMPT = INSUFFICIENT_REPORT_INSTRUCTIONS
+
+# ---------------------------------------------------------------------------
+# Report reflection and revision
+# ---------------------------------------------------------------------------
+
+REPORT_CRITIQUE_INSTRUCTIONS = """
+You are a rigorous research editor reviewing a draft report before publication.
+
+## Research Question
+{user_question}
+
+## Research Components
+{research_components}
+
+## Evidence Used
+{all_summaries}
+
+## Draft Report
+{draft_report}
+
+## Task
+Critique the draft against the question and evidence. Look for missing requested \
+components, unsupported or overconfident claims, citation mismatches, weak comparison \
+criteria, missing uncertainty, unnecessary generic sections, and conclusions that do not \
+follow from the evidence. Do not request stylistic changes unless they affect clarity.
+
+## Output Format
+Respond ONLY with valid JSON:
+{{
+  "decision": "accept" or "revise",
+  "missing_components": [],
+  "unsupported_claims": [],
+  "citation_problems": [],
+  "unnecessary_sections": [],
+  "required_changes": [],
+  "explanation": "Brief publication decision"
+}}
+"""
+
+REPORT_CRITIQUE_PROMPT = REPORT_CRITIQUE_INSTRUCTIONS
+
+REPORT_REVISION_INSTRUCTIONS = """
+You are a senior research editor revising a report after an evidence-based critique.
+
+## Research Question
+{user_question}
+
+## Evidence Sources
+{all_summaries}
+
+## Current Draft
+{draft_report}
+
+## Editor Critique
+{critique}
+
+## Task
+Return a revised Markdown report. Address every valid critique item using only the \
+provided evidence. Remove unsupported claims instead of inventing facts. Keep only \
+sections useful for this question. Preserve or repair inline citations as [1], [2], etc., \
+with URLs only in References. If evidence is not sufficient for a requested comparison, \
+state that limitation clearly and avoid a confident recommendation.
+
+Return the full Markdown report only.
+"""
+
+REPORT_REVISION_PROMPT = REPORT_REVISION_INSTRUCTIONS

@@ -12,6 +12,7 @@ AfterSearchRoute = Literal[
     "generate_reports",
 ]
 AfterRelevanceRoute = Literal["generate_search_queries", "generate_reports"]
+AfterCritiqueRoute = Literal["revise_report", "persist_outputs"]
 
 
 def _retries_remaining(state: ResearchGraphState) -> bool:
@@ -40,3 +41,13 @@ def route_after_relevance(state: ResearchGraphState) -> AfterRelevanceRoute:
     if state.get("should_regenerate_queries") and _retries_remaining(state):
         return "generate_search_queries"
     return "generate_reports"
+
+
+def route_after_critique(state: ResearchGraphState) -> AfterCritiqueRoute:
+    """Revise only on material defects and only within the revision budget."""
+    critique = state.get("report_critique") or {}
+    revision_count = int(state.get("revision_count") or 0)
+    max_revisions = int(state.get("max_report_revisions") or 0)
+    if critique.get("decision") == "revise" and revision_count < max_revisions:
+        return "revise_report"
+    return "persist_outputs"

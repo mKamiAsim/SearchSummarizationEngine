@@ -131,6 +131,10 @@ def generate_reports_node(state: ResearchGraphState) -> dict[str, Any]:
     sources = [str(s.get("url")) for s in passed if s.get("url")]
     return {
         "markdown_report": markdown,
+        "draft_report": markdown,
+        "report_critique": None,
+        "revision_count": int(state.get("revision_count") or 0),
+        "max_report_revisions": settings.max_report_revisions,
         "sources": sources,
         "report_mode": report_mode,
         "passed_summaries": passed,

@@ -43,6 +43,26 @@ def _normalize_queries(raw: list[Any], user_question: str, num_queries: int) -> 
     return queries
 
 
+def _normalize_components(raw: list[Any], queries: list[str]) -> list[dict[str, Any]]:
+    components: list[dict[str, Any]] = []
+    for item in raw:
+        if isinstance(item, dict):
+            name = str(item.get("name") or item.get("component") or "").strip()
+            component_queries = _normalize_queries(
+                list(item.get("search_queries") or item.get("queries") or []),
+                name,
+                len(queries),
+            )
+        else:
+            name = str(item).strip()
+            component_queries = []
+        if name:
+            components.append(
+                {"name": name, "search_queries": component_queries}
+            )
+    return components
+
+
 def generate_search_queries_node(state: ResearchGraphState) -> dict[str, Any]:
     """Generate initial or regenerated search queries."""
     settings = get_settings()
@@ -99,9 +119,16 @@ def generate_search_queries_node(state: ResearchGraphState) -> dict[str, Any]:
             user_question,
             num_queries,
         )
+        components = _normalize_components(
+            list(payload.get("components") or []), queries
+        )
     except Exception as exc:
         logger.error("Query generation failed: %s", exc)
         queries = [user_question]
+        components = [{"name": user_question, "search_queries": queries}]
+
+    if not components:
+        components = [{"name": user_question, "search_queries": queries}]
 
     if prior:
         filtered = [q for q in queries if q not in prior]
@@ -111,6 +138,7 @@ def generate_search_queries_node(state: ResearchGraphState) -> dict[str, Any]:
     logger.info("Search queries: %s", queries)
     return {
         "search_queries": queries,
+        "research_components": components,
         "prior_search_queries": prior,
         "relevance_evaluation": None,
         "should_regenerate_queries": False,

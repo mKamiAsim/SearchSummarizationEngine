@@ -8,14 +8,16 @@ from langgraph.graph import END, START, StateGraph
 
 from .nodes import (
     assess_relevance_node,
+    critique_report_node,
     execute_web_search_node,
     generate_reports_node,
     generate_search_queries_node,
     persist_outputs_node,
+    revise_report_node,
     scrape_and_summarize_node,
     select_assistant_node,
 )
-from .routing import route_after_relevance, route_after_search
+from .routing import route_after_critique, route_after_relevance, route_after_search
 from .state import ResearchGraphState
 
 
@@ -29,6 +31,8 @@ def build_research_graph() -> StateGraph:
     graph.add_node("scrape_and_summarize", scrape_and_summarize_node)
     graph.add_node("assess_relevance", assess_relevance_node)
     graph.add_node("generate_reports", generate_reports_node)
+    graph.add_node("critique_report", critique_report_node)
+    graph.add_node("revise_report", revise_report_node)
     graph.add_node("persist_outputs", persist_outputs_node)
 
     graph.add_edge(START, "select_assistant")
@@ -56,7 +60,16 @@ def build_research_graph() -> StateGraph:
         },
     )
 
-    graph.add_edge("generate_reports", "persist_outputs")
+    graph.add_edge("generate_reports", "critique_report")
+    graph.add_conditional_edges(
+        "critique_report",
+        route_after_critique,
+        {
+            "revise_report": "revise_report",
+            "persist_outputs": "persist_outputs",
+        },
+    )
+    graph.add_edge("revise_report", "critique_report")
     graph.add_edge("persist_outputs", END)
 
     return graph

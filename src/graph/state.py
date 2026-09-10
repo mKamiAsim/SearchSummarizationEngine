@@ -11,6 +11,7 @@ class ResearchGraphState(TypedDict, total=False):
     user_question: str
 
     assistant_persona: dict[str, Any] | None
+    research_components: list[dict[str, Any]]
     search_queries: list[str]
     prior_search_queries: list[str]
     search_results: list[dict[str, Any]]
@@ -26,6 +27,10 @@ class ResearchGraphState(TypedDict, total=False):
     max_retries: int
 
     report_mode: str
+    draft_report: str | None
+    report_critique: dict[str, Any] | None
+    revision_count: int
+    max_report_revisions: int
     markdown_report: str | None
     pdf_path: str | None
     markdown_path: str | None
@@ -41,6 +46,7 @@ def initial_state(
     user_question: str,
     *,
     max_retries: int = 3,
+    max_report_revisions: int = 2,
     save_to_file: str | None = None,
     generate_pdf: bool = True,
 ) -> ResearchGraphState:
@@ -48,6 +54,7 @@ def initial_state(
     return ResearchGraphState(
         user_question=user_question.strip(),
         assistant_persona=None,
+        research_components=[],
         search_queries=[],
         prior_search_queries=[],
         search_results=[],
@@ -61,6 +68,10 @@ def initial_state(
         retry_count=0,
         max_retries=max_retries,
         report_mode="full",
+        draft_report=None,
+        report_critique=None,
+        revision_count=0,
+        max_report_revisions=max_report_revisions,
         markdown_report=None,
         pdf_path=None,
         markdown_path=None,

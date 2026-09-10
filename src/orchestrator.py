@@ -56,6 +56,7 @@ class ResearchOrchestrator:
         state = initial_state(
             user_question.strip(),
             max_retries=self.settings.max_relevance_retries,
+            max_report_revisions=self.settings.max_report_revisions,
             save_to_file=save_to_file,
             generate_pdf=pdf_flag,
         )

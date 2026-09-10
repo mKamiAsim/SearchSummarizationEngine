@@ -108,6 +108,13 @@ class Settings(BaseSettings):
         description="Max times to regenerate queries when relevance is below threshold",
     )
 
+    max_report_revisions: int = Field(
+        default=2,
+        ge=0,
+        le=5,
+        description="Maximum Reflexion revisions for a generated report",
+    )
+
     search_retry_attempts: int = Field(
         default=3,
         ge=1,
